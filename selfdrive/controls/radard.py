@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import gc
 import zmq
 import numpy as np
 import numpy.matlib
@@ -47,12 +48,13 @@ class EKFV1D(EKF):
 # FIXME: radard has a memory leak of about 50MB/hr
 # BOUNTY: $100 coupon on shop.comma.ai
 def radard_thread(gctx=None):
+  gc.disable()
   set_realtime_priority(2)
 
   # wait for stats about the car to come in from controls
   cloudlog.info("radard is waiting for CarParams")
   CP = car.CarParams.from_bytes(Params().get("CarParams", block=True))
-  mocked = CP.carName == "mock"
+  mocked = CP.carName == "mock" or CP.carName == "honda"
   VM = VehicleModel(CP)
   cloudlog.info("radard got CarParams")
 
