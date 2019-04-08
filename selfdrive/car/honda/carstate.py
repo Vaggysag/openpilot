@@ -5,6 +5,9 @@ from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, SPEED_FACTOR, HONDA_BOSCH
 from selfdrive.kegman_conf import kegman_conf
 from common.realtime import sec_since_boot
+import selfdrive.messaging as messaging
+from selfdrive.services import service_list
+import zmq
 
 def parse_gear_shifter(gear, vals):
 
@@ -159,6 +162,11 @@ class CarState(object):
     self.brake_switch_prev = 0
     self.brake_switch_ts = 0
 
+    if CP.carFingerprint not in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH, CAR.INSIGHT):
+      #live20
+      context = zmq.Context()
+      self.poller = zmq.Poller()
+      self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
     self.lead_distance = 255
 
     self.cruise_buttons = 0
@@ -214,8 +222,19 @@ class CarState(object):
     if self.CP.carFingerprint in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.INSIGHT): # TODO: find wheels moving bit in dbc
       self.standstill = cp.vl["ENGINE_DATA"]['XMISSION_SPEED'] < 0.1
       self.door_all_closed = not cp.vl["SCM_FEEDBACK"]['DRIVERS_DOOR_OPEN']
-      self.lead_distance= cp.vl["RADAR_HUD"]['LEAD_DISTANCE']
+      self.lead_distance = cp.vl["RADAR_HUD"]['LEAD_DISTANCE']
     else:
+      _live20 = None
+      try:
+        for socket, event in self.poller.poll(0):
+          if socket is self.live20:
+            _live20 = messaging.drain_sock(socket)
+            for lv20 in _live20:
+              if lv20.live20.leadOne.status:
+                # car found
+                self.lead_distance = lv20.live20.leadOne.dRel
+      else:
+        pass
       self.standstill = not cp.vl["STANDSTILL"]['WHEELS_MOVING']
       self.door_all_closed = not any([cp.vl["DOORS_STATUS"]['DOOR_OPEN_FL'], cp.vl["DOORS_STATUS"]['DOOR_OPEN_FR'],
                                       cp.vl["DOORS_STATUS"]['DOOR_OPEN_RL'], cp.vl["DOORS_STATUS"]['DOOR_OPEN_RR']])
