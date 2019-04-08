@@ -90,6 +90,7 @@ class CarController(object):
     self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
+    self.prev_lead_distance = 0.0
 
     #self.params = Params()
     self.is_metric = Params().get("IsMetric") == "1"

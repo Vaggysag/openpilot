@@ -237,6 +237,7 @@ class CarState(object):
       else:
         self.lead_distance = cp.vl["RADAR_HUD"]['LEAD_DISTANCE']
     else:
+      self.lead_distance = 0
       self.standstill = not cp.vl["STANDSTILL"]['WHEELS_MOVING']
       self.door_all_closed = not any([cp.vl["DOORS_STATUS"]['DOOR_OPEN_FL'], cp.vl["DOORS_STATUS"]['DOOR_OPEN_FR'],
                                       cp.vl["DOORS_STATUS"]['DOOR_OPEN_RL'], cp.vl["DOORS_STATUS"]['DOOR_OPEN_RR']])
