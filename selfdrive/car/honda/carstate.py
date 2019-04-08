@@ -233,7 +233,7 @@ class CarState(object):
               if lv20.live20.leadOne.status:
                 # car found
                 self.lead_distance = lv20.live20.leadOne.dRel
-      else:
+      except:
         pass
       self.standstill = not cp.vl["STANDSTILL"]['WHEELS_MOVING']
       self.door_all_closed = not any([cp.vl["DOORS_STATUS"]['DOOR_OPEN_FL'], cp.vl["DOORS_STATUS"]['DOOR_OPEN_FR'],
