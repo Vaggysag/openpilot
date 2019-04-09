@@ -222,7 +222,7 @@ class CarState(object):
     if self.CP.carFingerprint in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.INSIGHT): # TODO: find wheels moving bit in dbc
       self.standstill = cp.vl["ENGINE_DATA"]['XMISSION_SPEED'] < 0.1
       self.door_all_closed = not cp.vl["SCM_FEEDBACK"]['DRIVERS_DOOR_OPEN']
-      if self.CP.carFingerprint in (CAR.CIVIC_BOSCH)
+      if self.CP.carFingerprint in (CAR.CIVIC_BOSCH):
         _live20 = None
         try:
           for socket, event in self.poller.poll(0):
