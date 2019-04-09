@@ -222,19 +222,21 @@ class CarState(object):
     if self.CP.carFingerprint in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.INSIGHT): # TODO: find wheels moving bit in dbc
       self.standstill = cp.vl["ENGINE_DATA"]['XMISSION_SPEED'] < 0.1
       self.door_all_closed = not cp.vl["SCM_FEEDBACK"]['DRIVERS_DOOR_OPEN']
-      self.lead_distance = cp.vl["RADAR_HUD"]['LEAD_DISTANCE']
+      if self.CP.carFingerprint in (CAR.CIVIC_BOSCH)
+        _live20 = None
+        try:
+          for socket, event in self.poller.poll(0):
+            if socket is self.live20:
+              _live20 = messaging.drain_sock(socket)
+              for lv20 in _live20:
+                if lv20.live20.leadOne.status:
+                  # car found
+                  self.lead_distance = lv20.live20.leadOne.dRel
+        except:
+          pass
+      else:
+        self.lead_distance = cp.vl["RADAR_HUD"]['LEAD_DISTANCE']
     else:
-      _live20 = None
-      try:
-        for socket, event in self.poller.poll(0):
-          if socket is self.live20:
-            _live20 = messaging.drain_sock(socket)
-            for lv20 in _live20:
-              if lv20.live20.leadOne.status:
-                # car found
-                self.lead_distance = lv20.live20.leadOne.dRel
-      except:
-        pass
       self.standstill = not cp.vl["STANDSTILL"]['WHEELS_MOVING']
       self.door_all_closed = not any([cp.vl["DOORS_STATUS"]['DOOR_OPEN_FL'], cp.vl["DOORS_STATUS"]['DOOR_OPEN_FR'],
                                       cp.vl["DOORS_STATUS"]['DOOR_OPEN_RL'], cp.vl["DOORS_STATUS"]['DOOR_OPEN_RR']])
