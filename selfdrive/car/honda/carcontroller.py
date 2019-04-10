@@ -191,7 +191,8 @@ class CarController(object):
           if CS.lead_distance > (self.prev_lead_distance + float(kegman.conf['leadDistance'])):
             can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
         else:
-          if CS.lead_distance > (self.prev_lead_distance - float(kegman.conf['leadDistance'])):
+          # For non-accord non-insight folks using mock radar for lead distance is in meters.
+          if CS.lead_distance > 8:
             can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
       else:
         self.prev_lead_distance = CS.lead_distance
