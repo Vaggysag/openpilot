@@ -123,7 +123,7 @@ class CarController(object):
     self.brake_last = rate_limit(brake, self.brake_last, -2., 1./100)
 
     # vehicle hud display, wait for one update from 10Hz 0x304 msg
-    if hud_show_lanes and CS.lkMode and not CS.left_blinker_on and not CS.right_blinker_on:
+    if hud_show_lanes and CS.lkMode:
       hud_lanes = 1
     else:
       hud_lanes = 0
@@ -141,7 +141,7 @@ class CarController(object):
       snd_beep = snd_beep if snd_beep is not 0 else snd_chime
       
     # Do not send audible alert when steering is disabled or blinkers on
-    if not CS.lkMode or CS.left_blinker_on or CS.right_blinker_on:
+    if not CS.lkMode:
       snd_beep = 0
       snd_chime = 0
 
@@ -167,7 +167,7 @@ class CarController(object):
     apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
 
-    lkas_active = enabled and not CS.steer_not_allowed and CS.lkMode and not CS.left_blinker_on and not CS.right_blinker_on  # add LKAS button to toggle steering
+    lkas_active = enabled and not CS.steer_not_allowed and CS.lkMode  # add LKAS button to toggle steering
 
     # Send CAN commands.
     can_sends = []
