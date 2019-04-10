@@ -193,7 +193,7 @@ class CarController(object):
         else:
           # For non-accord non-insight folks using mock radar for lead distance is in meters.
           # Fully stopped from ACC = Relative Distance is about 6 meters
-          if self.prev_lead_distance > 7:
+          if CS.lead_distance > (self.prev_lead_distance + 2):
             can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
       else:
         self.prev_lead_distance = CS.lead_distance
