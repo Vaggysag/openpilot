@@ -337,6 +337,9 @@ struct Live20Data {
     fcw @10 :Bool;
     status @11 :Bool;
     aLeadTau @12 :Float32;
+    oClass @13 :Int8;
+    length @14 :Float32;
+    trackId @15 :Int8;
   }
 }
 

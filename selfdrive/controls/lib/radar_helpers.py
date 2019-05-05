@@ -42,7 +42,7 @@ class Track(object):
     self.stationary = True
     self.initted = False
 
-  def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, track_id,d_path, v_ego_t_aligned, steer_override):
+  def update(self, d_rel, y_rel, v_rel, a_rel, vy_rel, measured, oClass, length, track_id,d_path, v_ego_t_aligned, steer_override):
     if self.initted:
       # pylint: disable=access-member-before-definition
       self.dPathPrev = self.dPath
@@ -251,6 +251,9 @@ class Cluster(object):
       "status": True,
       "fcw": self.is_potential_fcw(),
       "aLeadTau": float(self.aLeadTau),
+      "oClass": int(self.oClass),
+      "length": float(self.length),
+      "trackId": int(self.track_id),
     }
 
   def __str__(self):
@@ -315,14 +318,12 @@ class Cluster(object):
 
     return abs(d_path) < abs(dy/2.)  and not self.stationary #and not self.oncoming
 
-  
-
   def is_potential_lead2(self, lead_clusters):
     if len(lead_clusters) > 0:
       lead_cluster = lead_clusters[0]
-      # check if the new lead is too close and roughly at the same speed of the first lead:
+	  # check if the new lead is too close and roughly at the same speed of the first lead:
       # it might just be the second axle of the same vehicle
-      return (self.dRel - lead_cluster.dRel) > 8. or abs(self.vRel - lead_cluster.vRel) > 1.
+      return ((self.dRel - lead_cluster.dRel > 8.) and (lead_cluster.oClass > 0))  or ((self.dRel - lead_cluster.dRel > 15.) and (lead_cluster.oClass == 0)) or abs(self.vRel - lead_cluster.vRel) > 1.
     else:
       return False
 
