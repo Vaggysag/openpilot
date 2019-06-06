@@ -1,6 +1,5 @@
 from collections import namedtuple
 from common.realtime import sec_since_boot
-from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip
 from selfdrive.car import create_gas_command
@@ -96,27 +95,20 @@ HUDData = namedtuple("HUDData",
 
 
 class CarController(object):
-  def __init__(self, dbc_name, enable_camera=True):
-    self.accel_steady = 0.
+  def __init__(self, dbc_name):
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
     self.apply_brake_last = 0
     self.last_pump_ts = 0
-    self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
     self.radarVin_idx = 0
 
-  def update(self, sendcan, enabled, CS, frame, actuators, \
+  def update(self, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
              hud_v_cruise, hud_show_lanes, hud_show_car, \
              hud_alert, snd_beep, snd_chime):
-
-    """ Controls thread """
-
-    if not self.enable_camera:
-      return
 
     # *** apply brake hysteresis ***
     brake, self.braking, self.brake_steady = actuator_hystereses(actuators.brake, self.braking, self.brake_steady, CS.v_ego, CS.CP.carFingerprint)
@@ -193,7 +185,7 @@ class CarController(object):
     # Send dashboard UI commands.
     if (frame % 10) == 0:
       idx = (frame//10) % 4
-      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.radarOffCan and (not CS.useTeslaRadar), CS.CP.openpilotLongitudinalControl, idx))
+      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.is_metric, CS.CP.radarOffCan and (not CS.useTeslaRadar), CS.CP.openpilotLongitudinalControl, idx))
 
     if not CS.CP.openpilotLongitudinalControl:
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
@@ -219,4 +211,4 @@ class CarController(object):
           # This prevents unexpected pedal range rescaling
           can_sends.append(create_gas_command(self.packer, apply_gas, idx))
 
-    sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan'))
+    return can_sends

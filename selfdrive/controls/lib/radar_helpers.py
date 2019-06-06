@@ -1,6 +1,3 @@
-import os
-import sys
-import platform
 import numpy as np
 
 from common.numpy_fast import clip, interp
@@ -129,27 +126,6 @@ class Track(object):
   def get_key_for_cluster_dy(self, dy):
     # Weigh y higher since radar is inaccurate in this dimension
     return [self.dRel, (self.yRel-dy)*2, self.vRel]
-
-
-# ******************* Cluster *******************
-if platform.machine() == 'aarch64':
-  for x in sys.path:
-    pp = os.path.join(x, "phonelibs/hierarchy/lib")
-    if os.path.isfile(os.path.join(pp, "_hierarchy.so")):
-      sys.path.append(pp)
-      break
-  import _hierarchy  #pylint: disable=import-error
-else:
-  from scipy.cluster import _hierarchy
-
-
-def fcluster(Z, t, criterion='inconsistent', depth=2, R=None, monocrit=None):
-  # supersimplified function to get fast clustering. Got it from scipy
-  Z = np.asarray(Z, order='c')
-  n = Z.shape[0] + 1
-  T = np.zeros((n,), dtype='i')
-  _hierarchy.cluster_dist(Z, T, float(t), int(n))
-  return T
 
 
 def mean(l):
