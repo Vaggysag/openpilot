@@ -113,7 +113,7 @@ class CarInterface(object):
 
     # normalized max accel. Allowing max accel at low speed causes speed overshoots
     max_accel_bp = [10, 20]    # m/s
-    max_accel_v = [3.5, 1.25] # unit of max accel
+    max_accel_v = [0.714, 1.0] # unit of max accel
     max_accel = interp(v_ego, max_accel_bp, max_accel_v)
 
     # limit the pcm accel cmd if:
