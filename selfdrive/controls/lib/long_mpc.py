@@ -96,7 +96,7 @@ class LongitudinalMpc(object):
 
   def dynamic_follow(self, velocity):  # in m/s
     x_vel = [0.0, 1.86267, 3.72533, 5.588, 7.45067, 9.31333, 11.55978, 13.645, 22.352, 31.2928, 33.528, 35.7632, 40.2336]  # velocity
-    y_mod = [0.85, 0.83, 0.815, .8, .92, .98, .99, 1., 1.1, 1.15, 1.18, 1.26, 1.32]  # distances
+    y_mod = [1.03, 1.05363, 1.07879, .88, .92, .98, .99, 1., 1.1, 1.15, 1.18, 1.26, 1.32]  # distances
 
     stop_and_go_magic_number = 8.9408  # 20 mph
 
