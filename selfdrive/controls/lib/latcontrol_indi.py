@@ -1,6 +1,7 @@
 import math
 import numpy as np
 
+from common.numpy_fast import interp
 from cereal import log
 from common.realtime import DT_CTRL
 from common.numpy_fast import clip
@@ -8,10 +9,16 @@ from selfdrive.car.toyota.carcontroller import SteerLimitParams
 from selfdrive.car import apply_toyota_steer_torque_limits
 from selfdrive.controls.lib.drive_helpers import get_steer_max
 
+from common.realtime import sec_since_boot
+from common.numpy_fast import interp
+
 
 class LatControlINDI(object):
   def __init__(self, CP):
     self.angle_steers_des = 0.
+    self.frame = 0
+    self.damp_angle_steers_des = 0.0
+    self.damp_rate_steers_des = 0.0
 
     A = np.matrix([[1.0, DT_CTRL, 0.0],
                    [0.0, 1.0, DT_CTRL],
@@ -39,6 +46,7 @@ class LatControlINDI(object):
     self.outer_loop_gain = CP.lateralTuning.indi.outerLoopGain
     self.inner_loop_gain = CP.lateralTuning.indi.innerLoopGain
     self.alpha = 1. - DT_CTRL / (self.RC + DT_CTRL)
+    self.react_mpc = CP.lateralTuning.indi.reactMPC
 
     self.reset()
 
@@ -52,6 +60,7 @@ class LatControlINDI(object):
     y = np.matrix([[math.radians(angle_steers)], [math.radians(angle_steers_rate)]])
     self.x = np.dot(self.A_K, self.x) + np.dot(self.K, y)
 
+    self.damp_angle_steers = math.degrees(self.x[0])
     indi_log = log.ControlsState.LateralINDIState.new_message()
     indi_log.steerAngle = math.degrees(self.x[0])
     indi_log.steerRate = math.degrees(self.x[1])
@@ -61,12 +70,17 @@ class LatControlINDI(object):
       indi_log.active = False
       self.output_steer = 0.0
       self.delayed_output = 0.0
+      self.damp_angle_steers_des = 0.0
+      self.damp_rate_steers_des = 0.0
     else:
       self.angle_steers_des = path_plan.angleSteers
       self.rate_steers_des = path_plan.rateSteers
 
-      steers_des = math.radians(self.angle_steers_des)
-      rate_des = math.radians(self.rate_steers_des)
+      self.damp_angle_steers_des += (interp(sec_since_boot() + self.react_mpc, path_plan.mpcTimes, path_plan.mpcAngles) - self.damp_angle_steers_des) / 5.0
+      self.damp_rate_steers_des += (interp(sec_since_boot() + self.react_mpc, path_plan.mpcTimes, path_plan.mpcRates) - self.damp_rate_steers_des) / 5.0
+
+      steers_des = math.radians(self.damp_angle_steers_des)
+      rate_des = math.radians(self.damp_rate_steers_des)
 
       # Expected actuator value
       self.delayed_output = self.delayed_output * self.alpha + self.output_steer * (1. - self.alpha)

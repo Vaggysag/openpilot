@@ -403,6 +403,7 @@ struct ControlsState @0x97ff69c53601abf1 {
   jerkFactor @12 :Float32;
   angleSteers @13 :Float32;     # Steering angle in degrees.
   angleSteersDes @29 :Float32;
+  dampAngleSteersDes @54 :Float32;
   curvature @37 :Float32;       # path curvature from vehicle model
   hudLeadDEPRECATED @14 :Int32;
   cumLagMs @15 :Float32;
@@ -663,7 +664,8 @@ struct PathPlan {
   sensorValid @14 :Bool;
   commIssue @15 :Bool;
   mpcAngles @16 :List(Float32);
-  mpcTimes @17 :List(Float32);
+  mpcRates @17 :List(Float32);
+  mpcTimes @18 :List(Float32);
 }
 
 struct LiveLocationData {

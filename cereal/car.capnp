@@ -348,6 +348,8 @@ struct CarParams {
     kiBP @2 :List(Float32);
     kiV @3 :List(Float32);
     kf @4 :Float32;
+    dampTime @5 :Float32;
+    reactMPC @6 :Float32;
   }
 
   struct LongitudinalPIDTuning {
@@ -357,6 +359,7 @@ struct CarParams {
     kiV @3 :List(Float32);
     deadzoneBP @4 :List(Float32);
     deadzoneV @5 :List(Float32);
+    reactMPC @4 :Float32;
   }
 
 
