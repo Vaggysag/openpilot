@@ -19,16 +19,16 @@ def upload_data():
       username = ''.join([random.choice(string.lowercase+string.uppercase+string.digits) for i in range(15)])
 
     filepath = "/data/openpilot/selfdrive/df/df-data"
-    filename = ntpath.basename(filepath) + ".{}".format(random.randint(1,99999))
+    filename = "df-data" + ".{}".format(random.randint(1,99999))
 
     ftp = ftplib.FTP("kevo.live")
     ftp.login("openpilot", "openpilotdf")
-    with open(filepath, "rb") as f:
+    with open(filepath, "r") as f:
       try:
         ftp.mkd("/Home/{}".format(username))
       except:
         pass
-      ftp.storbinary("STOR /Home/{}/{}".format(username, filename), f)
+      ftp.storbinary("STOR /Home/{}/{}".format(username, filename), f, 1)
     ftp.quit()
     os.remove(filepath)
     return True
