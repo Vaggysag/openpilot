@@ -119,7 +119,7 @@ def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, r
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
-def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, openpilot_longitudinal_control, idx):
+def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, radar_off_can, openpilot_longitudinal_control, idx):
   commands = []
 
   if car_fingerprint in HONDA_BOSCH:
@@ -141,8 +141,10 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
       'SET_ME_X03': hud.dist_lines,
       'SET_ME_X03_2': hud.speed_units,
       'HUD_LEAD': hud.car,
-      'SET_ME_X01': 0x01,
-      'HUD_DISTANCE_3': 1,
+      'HUD_DISTANCE': 3,    # max distance setting on display
+      'IMPERIAL_UNIT': int(not is_metric),
+      'SET_ME_X01_2': 1,
+      'SET_ME_X01': 1,
     }
 
   if openpilot_longitudinal_control:

@@ -46,22 +46,24 @@ class PathPlanner(object):
     self.cur_state[0].y = 0.0
     self.cur_state[0].psi = 0.0
     self.cur_state[0].delta = 0.0
-    self.mpc_angles = [0.0, 0.0, 0.0]
-    self.mpc_times = [0.0, 0.0, 0.0]
+    self.mpc_angles = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    self.mpc_rates = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    self.mpc_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    self.mpc_probs = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     self.angle_steers_des = 0.0
     self.angle_steers_des_mpc = 0.0
     self.angle_steers_des_prev = 0.0
     self.angle_steers_des_time = 0.0
 
-  def update(self, rcv_times, CP, VM, CS, md, live100, live_parameters):
+  def update(self, rcv_times, CP, VM, CS, md, controls_state, live_parameters):
     v_ego = CS.carState.vEgo
     angle_steers = CS.carState.steeringAngle
-    active = live100.live100.active
+    active = controls_state.controlsState.active
     cur_time = sec_since_boot()
 
     angle_offset_average = live_parameters.liveParameters.angleOffsetAverage
-    angle_offset_bias = live100.live100.angleModelBias + angle_offset_average
+    angle_offset_bias = controls_state.controlsState.angleModelBias + angle_offset_average
 
     self.MP.update(v_ego, md)
 
@@ -73,15 +75,8 @@ class PathPlanner(object):
     p_poly = libmpc_py.ffi.new("double[4]", list(self.MP.p_poly))
 
     # account for actuation delay
-    self.cur_state = calc_states_after_delay(self.cur_state, v_ego, angle_steers - angle_offset_average, curvature_factor, VM.sR, CP.steerActuatorDelay)
+    self.cur_state = calc_states_after_delay(self.cur_state, v_ego, angle_steers - angle_offset_bias, curvature_factor, VM.sR, CP.steerActuatorDelay)
     self.angle_steers_des_prev = np.interp(cur_time, self.mpc_times, self.mpc_angles)
-
-    # reset to current steer angle if not active or overriding
-    if active:
-      self.cur_state[0].delta = math.radians(self.angle_steers_des_prev - angle_offset_bias) / VM.sR
-    else:
-      rate_desired = 0.0
-      self.cur_state[0].delta = math.radians(angle_steers - angle_offset_bias) / VM.sR
 
     v_ego_mpc = max(v_ego, 5.0)  # avoid mpc roughness due to low speed
     self.libmpc.run_mpc(self.cur_state, self.mpc_solution,
@@ -92,19 +87,34 @@ class PathPlanner(object):
     mpc_nans = np.any(np.isnan(list(self.mpc_solution[0].delta)))
 
     if not mpc_nans:
-      self.mpc_angles = [self.angle_steers_des_prev,
-                        float(math.degrees(self.mpc_solution[0].delta[1] * VM.sR) + angle_offset_bias),
-                        float(math.degrees(self.mpc_solution[0].delta[2] * VM.sR) + angle_offset_bias)]
+      self.mpc_angles[0] = angle_steers
+      self.mpc_times[0] = rcv_times['model']
+      oversample_limit = 19 if v_ego == 0 else 4 + min(15, int(800.0 / v_ego))
+      for i in range(1,20):
+        if i < 6:
+          self.mpc_times[i] = self.mpc_times[i-1] + _DT_MPC
+          self.mpc_rates[i-1] = (float(math.degrees(self.mpc_solution[0].rate[i-1] * VM.sR)) * self.MP.c_prob \
+                                + self.mpc_rates[i] * self.mpc_probs[i]) / (self.MP.c_prob + self.mpc_probs[i])
+          self.mpc_probs[i-1] = (self.MP.c_prob**2 + self.mpc_probs[i]**2) / (self.MP.c_prob + self.mpc_probs[i])
+        elif i <= oversample_limit:
+          self.mpc_times[i] = self.mpc_times[i-1] + 3.0 * _DT_MPC
+          self.mpc_rates[i-1] = (float(math.degrees(self.mpc_solution[0].rate[i-1] * VM.sR)) * self.MP.c_prob \
+                      + 0.33 * self.mpc_rates[i] * self.mpc_probs[i] \
+                      + 0.66 * self.mpc_rates[i-1] * self.mpc_probs[i-1]) \
+                      / (self.MP.c_prob + 0.66 * self.mpc_probs[i-1] + 0.33 * self.mpc_probs[i])
+          self.mpc_probs[i-1] = (self.MP.c_prob**2 + 0.33 * self.mpc_probs[i]**2 + 0.66 * self.mpc_probs[i-1]**2) \
+                      / (self.MP.c_prob + 0.66 * self.mpc_probs[i-1] + 0.33 * self.mpc_probs[i])
+        else:
+          self.mpc_times[i] = self.mpc_times[i-1] + 3.0 * _DT_MPC
+          self.mpc_rates[i-1] = float(math.degrees(self.mpc_solution[0].rate[i-1] * VM.sR))
+          self.mpc_probs[i-1] = self.MP.c_prob
+        self.mpc_angles[i] = (self.mpc_times[i] - self.mpc_times[i-1]) * self.mpc_rates[i-1] + self.mpc_angles[i-1]
 
-      self.mpc_times = [cur_time,
-                        cur_time + _DT_HALF_MPC,
-                        cur_time + _DT_HALF_MPC + _DT_MPC]
-
-      self.angle_steers_des_mpc = self.mpc_angles[1]
       rate_desired = math.degrees(self.mpc_solution[0].rate[0] * VM.sR)
+      self.angle_steers_des_mpc = self.mpc_angles[1]
+
     else:
       self.libmpc.init(MPC_COST_LAT.PATH, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, CP.steerRateCost)
-      self.cur_state[0].delta = math.radians(angle_steers) / VM.sR
 
       if cur_time > self.last_cloudlog_t + 5.0:
         self.last_cloudlog_t = cur_time
@@ -132,10 +142,12 @@ class PathPlanner(object):
     plan_send.pathPlan.angleSteers = float(self.angle_steers_des_mpc)
     plan_send.pathPlan.mpcAngles = map(float, self.mpc_angles)
     plan_send.pathPlan.mpcTimes = map(float, self.mpc_times)
+    plan_send.pathPlan.mpcRates = map(float, self.mpc_rates)
     plan_send.pathPlan.rateSteers = float(rate_desired)
     plan_send.pathPlan.angleOffset = float(angle_offset_average)
     plan_send.pathPlan.valid = bool(plan_valid)
     plan_send.pathPlan.paramsValid = bool(live_parameters.liveParameters.valid)
+    plan_send.pathPlan.sensorValid = bool(live_parameters.liveParameters.sensorValid)
     plan_send.pathPlan.modelValid = bool(not model_dead)
 
     self.plan.send(plan_send.to_bytes())

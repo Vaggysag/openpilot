@@ -1,5 +1,1 @@
-This is a branch that uses an EXPERIMENTAL neural network model for longitudinal control. Please use at your own risk!
-
-When there is no lead vehicle, openpilot uses the standard PID loop to control speed. The second it senses a lead with your radar, it switches to the longitudinal model to control your car. The model has no sense of speed limits, it will follow the lead car as fast as the lead goes. Currently, the model has a hard time accelerating in traffic conditions, but braking seems to be performing very smoothly.
-
-Highway speeds are where this model shines, it smoothly keeps you at a safe (debatable) distance behind the lead while using brakes as little as possible (it tries to coast as a human driver would). Avoid large speed differentials unless you have a car with regenerative braking, as the model was trained on Chevy Volts, which have regen. If the lead at highway speeds starts to brake to a stop, the model will attempt to 'coast,' or use the regen brakes however if you have an ICE vehicle, it will just get super close to the car. It does seem to brake at the last minute, though I'm not sure if it will brake in time.
+This is highly experimental.. Use at your own risk. I'm not your mother.
