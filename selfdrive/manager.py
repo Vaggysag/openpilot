@@ -135,8 +135,9 @@ persistent_processes = [
   'tombstoned',
   'uploader',
   'ui',
+  'gpsd',
   'updated',
-  'athena',
+  'athena'
 ]
 
 car_started_processes = [
@@ -360,8 +361,8 @@ def manager_thread():
         kill_managed_process(p)
 
     # check the status of all processes, did any of them die?
-    running_list = ["   running %s %s" % (p, running[p]) for p in running]
-    cloudlog.debug('\n'.join(running_list))
+    #for p in running:
+    #  cloudlog.debug("   running %s %s" % (p, running[p]))
 
     # is this still needed?
     if params.get("DoUninstall") == "1":

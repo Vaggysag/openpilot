@@ -13,6 +13,16 @@ from selfdrive.car.honda.values import CruiseButtons, CAR, HONDA_BOSCH, AUDIO_HU
 from selfdrive.car import STD_CARGO_KG
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 
+try:
+  from selfdrive.car.honda.carcontroller import CarController
+except ImportError:
+  CarController = None
+
+# msgs sent for steering controller by camera module on can 0.
+# those messages are mutually exclusive on CRV and non-CRV cars
+NIDEC_CAMERA_MSGS = [0xe4, 0x194]
+BOSCH_RADAR_MSGS = [0xE4, 0x1DF, 0x1EF, 0x30C, 0x33D, 0x39F]
+
 A_ACC_MAX = max(_A_CRUISE_MAX_V_FOLLOWING)
 
 
@@ -101,7 +111,7 @@ class CarInterface(object):
 
     # normalized max accel. Allowing max accel at low speed causes speed overshoots
     max_accel_bp = [10, 20]    # m/s
-    max_accel_v = [0.714, 1.0] # unit of max accel
+    max_accel_v = [3.5, 1.25] # unit of max accel
     max_accel = interp(v_ego, max_accel_bp, max_accel_v)
 
     # limit the pcm accel cmd if:
@@ -139,18 +149,21 @@ class CarInterface(object):
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModel.hondaBosch
       ret.enableCamera = True
-      ret.radarOffCan = True
-      ret.openpilotLongitudinalControl = False
+      ret.radarOffCan = any(x for x in BOSCH_RADAR_MSGS if x in fingerprint)
+      ret.openpilotLongitudinalControl = not ret.radarOffCan
+      ret.enableCruise = ret.radarOffCan
     else:
-      ret.safetyModel = car.CarParams.SafetyModel.honda
-      ret.enableCamera = not any(x for x in CAMERA_MSGS if x in fingerprint)
+      ret.safetyModel = car.CarParams.SafetyModels.honda
+      ret.enableCamera = not any(x for x in NIDEC_CAMERA_MSGS if x in fingerprint)
       ret.enableGasInterceptor = 0x201 in fingerprint
       ret.openpilotLongitudinalControl = ret.enableCamera
+      ret.enableCruise = not ret.enableGasInterceptor
 
     cloudlog.warn("ECU Camera Simulated: %r", ret.enableCamera)
     cloudlog.warn("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
 
-    ret.enableCruise = not ret.enableGasInterceptor
+    # kg of standard extra cargo to count for drive, gas, etc...
+    std_cargo = 136
 
     # FIXME: hardcoding honda civic 2016 touring params so they can be used to
     # scale unknown params for other cars
@@ -172,7 +185,7 @@ class CarInterface(object):
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
     ret.lateralTuning.pid.kf = 0.00006 # conservative feed-forward
 
-    if candidate in [CAR.CIVIC, CAR.CIVIC_BOSCH]:
+    if candidate in [CAR.CIVIC]:
       stop_and_go = True
       ret.mass = mass_civic
       ret.wheelbase = wheelbase_civic
@@ -181,14 +194,45 @@ class CarInterface(object):
       tire_stiffness_factor = 1.
       # Civic at comma has modified steering FW, so different tuning for the Neo in that car
       is_fw_modified = os.getenv("DONGLE_ID") in ['99c94dc769b5d96e']
-      if is_fw_modified:
-        ret.lateralTuning.pid.kf = 0.00004
-
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.12]] if is_fw_modified else [[0.8], [0.24]]
+      if is_fw_modified:
+        tire_stiffness_factor = 0.9
+        ret.lateralTuning.pid.kf = 0.00004
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
       ret.longitudinalTuning.kpV = [3.6, 2.4, 1.5]
       ret.longitudinalTuning.kiBP = [0., 35.]
       ret.longitudinalTuning.kiV = [0.54, 0.36]
+
+    elif candidate in [CAR.CIVIC_BOSCH]:
+      stop_and_go = True
+      ret.mass = mass_civic
+      ret.wheelbase = wheelbase_civic
+      ret.centerToFront = centerToFront_civic
+      ret.steerRatio = 14.63  # 10.93 is end-to-end spec
+      tire_stiffness_factor = 1.
+      # Civic at comma has modified steering FW, so different tuning for the Neo in that car
+      is_fw_modified = os.getenv("DONGLE_ID") in ['99c94dc769b5d96e']
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.12]] if is_fw_modified else [[0.8], [0.24]]
+      if is_fw_modified:
+        ret.lateralTuning.pid.kf = 0.00004
+
+      ret.longitudinalTuning.kpBP = [0., 5., 35.]
+      ret.longitudinalTuning.kpV = [4.0, 2.85, 1.55]
+      ret.longitudinalTuning.kiBP = [0., 5., 35.]
+      ret.longitudinalTuning.kiV = [0.56, 0.54, 0.32]
+
+    elif candidate == CAR.INSIGHT:
+      stop_and_go = True
+      ret.mass = 2987. * CV.LB_TO_KG + STD_CARGO_KG
+      ret.wheelbase = 2.7
+      ret.centerToFront = ret.wheelbase * 0.39
+      ret.steerRatio = 15  # 12.58 is spec end-to-end
+      tire_stiffness_factor = 0.82
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.5], [0.22]]
+      ret.longitudinalTuning.kpBP = [0., 5., 20., 35.]
+      ret.longitudinalTuning.kpV = [0.6, 0.64, 0.6, 0.5]
+      ret.longitudinalTuning.kiBP = [0., 5., 20., 35.]
+      ret.longitudinalTuning.kiV = [0.18, 0.192, 0.18, 0.22]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
@@ -239,25 +283,14 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.41
       ret.steerRatio = 16.0   # 12.3 is spec end-to-end
       tire_stiffness_factor = 0.677
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]]
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
-
-    elif candidate == CAR.CRV_HYBRID:
-      stop_and_go = True
-      ret.safetyParam = 1 # Accord and CRV 5G use an alternate user brake msg
-      ret.mass = 1667. + STD_CARGO_KG # mean of 4 models in kg
-      ret.wheelbase = 2.66
-      ret.centerToFront = ret.wheelbase * 0.41
-      ret.steerRatio = 16.0   # 12.3 is spec end-to-end
-      tire_stiffness_factor = 0.677
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]]
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
+      ret.steerKpV, ret.steerKiV = [[0.075], [0.0225]] if is_fw_modified else [[0.6], [0.18]]
+      if is_fw_modified:
+        ret.steerKpV, ret.steerKiV = [[0.075], [0.0225]] #[[0.15], [0.045]]
+        ret.steerKf = 0.0000075 #0.000015
+      ret.longitudinalKpBP = [0., 5., 35.]
+      ret.longitudinalKpV = [1.2, 0.8, 0.5]
+      ret.longitudinalKiBP = [0., 35.]
+      ret.longitudinalKiV = [0.18, 0.12]
 
     elif candidate == CAR.ACURA_RDX:
       stop_and_go = False
@@ -356,9 +389,10 @@ class CarInterface(object):
     ret.steerMaxBP = [0.]  # m/s
     ret.steerMaxV = [1.]   # max steer allowed
 
-    ret.gasMaxBP = [0.]  # m/s
-    ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.] # max gas allowed
-    ret.brakeMaxBP = [5., 20.]  # m/s
+    ret.gasMaxBP = [0.0, 1.4082, 2.80311, 4.22661, 5.38271, 6.16561, 7.24781, 8.28308, 10.24465, 12.96402, 15.42303, 18.11903, 20.11703, 24.46614, 29.05805, 32.71015, 35.76326]  # m/s
+    ret.gasMaxV = [0.39, 0.43, 0.425, 0.42, 0.415, 0.4, 0.4832, 0.375, 0.38, 0.383, 0.385, 0.388, 0.39, 0.4, 0.41, 0.42, 0.43] # percentage of gas
+
+    ret.brakeMaxBP = [0., 20.]  # m/s
     ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
     ret.longitudinalTuning.deadzoneBP = [0.]
@@ -409,7 +443,7 @@ class CarInterface(object):
     ret.brake = self.CS.user_brake
     ret.brakePressed = self.CS.brake_pressed != 0
     # FIXME: read sendcan for brakelights
-    brakelights_threshold = 0.02 if self.CS.CP.carFingerprint == CAR.CIVIC else 0.1
+    brakelights_threshold = 0.05 if self.CS.CP.carFingerprint == CAR.CIVIC else 0.1
     ret.brakeLights = bool(self.CS.brake_switch or
                            c.actuators.brake > brakelights_threshold)
 
@@ -429,6 +463,9 @@ class CarInterface(object):
     ret.cruiseState.available = bool(self.CS.main_on)
     ret.cruiseState.speedOffset = self.CS.cruise_speed_offset
     ret.cruiseState.standstill = False
+
+    ret.readdistancelines = self.CS.read_distance_lines
+    ret.lkMode = self.CS.lkMode
 
     # TODO: button presses
     buttonEvents = []
@@ -489,7 +526,11 @@ class CarInterface(object):
     # wait 1.0s before throwing the alert to avoid it popping when you turn off the car
     if self.cp_cam.can_invalid_cnt >= 100 and self.CS.CP.carFingerprint not in HONDA_BOSCH and self.CP.enableCamera:
       events.append(create_event('invalidGiraffeHonda', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE, ET.PERMANENT]))
-    if self.CS.steer_error:
+    if not self.CS.lkMode:
+      events.append(create_event('manualSteeringRequired', [ET.WARNING]))
+    elif self.CS.lkMode and (self.CS.left_blinker_on or self.CS.right_blinker_on):
+      events.append(create_event('manualSteeringRequiredBlinkersOn', [ET.WARNING]))
+    elif self.CS.steer_error:
       events.append(create_event('steerUnavailable', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE, ET.PERMANENT]))
     elif self.CS.steer_warning:
       events.append(create_event('steerTempUnavailable', [ET.WARNING]))
@@ -507,7 +548,7 @@ class CarInterface(object):
       events.append(create_event('wrongCarMode', [ET.NO_ENTRY, ET.USER_DISABLE]))
     if ret.gearShifter == 'reverse':
       events.append(create_event('reverseGear', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
-    if self.CS.brake_hold and self.CS.CP.carFingerprint not in HONDA_BOSCH:
+    if self.CS.brake_hold and not self.CS.CP.radarOffCan:
       events.append(create_event('brakeHold', [ET.NO_ENTRY, ET.USER_DISABLE]))
     if self.CS.park_brake:
       events.append(create_event('parkBrake', [ET.NO_ENTRY, ET.USER_DISABLE]))

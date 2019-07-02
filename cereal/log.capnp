@@ -662,6 +662,8 @@ struct PathPlan {
   angleOffset @11 :Float32;
   sensorValid @14 :Bool;
   commIssue @15 :Bool;
+  mpcAngles @16 :List(Float32);
+  mpcTimes @17 :List(Float32);
 }
 
 struct LiveLocationData {
@@ -1693,6 +1695,11 @@ struct KalmanOdometry {
   rot @1 :List(Float32); # rad/s in device frame
   transStd @2 :List(Float32); # std m/s in device frame
   rotStd @3 :List(Float32); # std rad/s in device frame
+}
+
+struct DynamicFollowData {
+  gas @0 :Float32;
+  brake @1 :Float32;
 }
 
 struct Event {

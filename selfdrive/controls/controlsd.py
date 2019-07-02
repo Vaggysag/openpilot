@@ -25,10 +25,19 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.controls.lib.driver_monitor import DriverStatus
 from selfdrive.controls.lib.planner import LON_MPC_STEP
 from selfdrive.locationd.calibration_helpers import Calibration, Filter
+from selfdrive.df import lib_main
 
 ThermalStatus = log.ThermalData.ThermalStatus
+last_radar_state = None
 State = log.ControlsState.OpenpilotState
 
+def norm(data, min_max=None):
+  if min_max==None:
+    d_min = min(data)
+    d_max = max(data)
+    return [(i - d_min) / (d_max - d_min) for i in data], [d_min, d_max]
+  else:
+    return (data - min_max[0]) / (min_max[1] - min_max[0])
 
 def isActive(state):
   """Check if the actuators are enabled"""
@@ -54,6 +63,7 @@ def data_sample(CI, CC, sm, cal_status, cal_perc, overtemp, free_space, low_batt
   """Receive data from sockets and create events for battery, temperature and disk space"""
 
   # Update carstate from CAN and create events
+  global last_radar_state
   CS = CI.update(CC)
   events = list(CS.events)
   enabled = isEnabled(state)
@@ -236,9 +246,36 @@ def state_control(frame, rcv_frame, plan, path_plan, CS, CP, state, events, v_cr
   a_acc_sol = plan.aStart + (dt / LON_MPC_STEP) * (plan.aTarget - plan.aStart)
   v_acc_sol = plan.vStart + dt * (a_acc_sol + plan.aStart) / 2.0
 
+#  v_ego_scale = [-0.2154252678155899, 41.05433654785156]
+#  a_ego_scale = [-6.315138339996338, 4.432629585266113]
+#  v_lead_scale = [0.0, 48.66924285888672]
+#  x_lead_scale = [0.125, 185.21875]
+#  a_lead_scale = [-8.398388862609863, 14.781030654907227]
+
+#  v_lead = 40.0
+#  x_lead = 50.0
+#  a_lead = 20.0
+#  has_lead = False
+#  if radar_state is not None:
+#    lead_1 = radar_state.radarState.leadOne
+#    if lead_1 is not None and lead_1.status:
+#      x_lead = lead_1.dRel
+#      v_lead = lead_1.vLead
+#      a_lead = lead_1.aLeadK
+#      has_lead = True
+
+#  if has_lead:
+#  model_output = float(libmpc.run_model(norm(CS.vEgo, v_ego_scale), norm(CS.aEgo, a_ego_scale), norm(v_lead, v_lead_scale), norm(x_lead, x_lead_scale), norm(a_lead, a_lead_scale)))
+
+#  model_output = clip((model_output - 0.5) * 2.5, -1.0, 1.0)
+
+#  actuators.gas = max(model_output, 0.0)
+#  actuators.brake = -min(model_output, 0.0)
   # Gas/Brake PID loop
+#  else:
   actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
-                                              v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
+                                                v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
+
   # Steering PID loop and lateral MPC
   actuators.steer, actuators.steerAngle, lac_log = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate,
                                                               CS.steeringPressed, CP, VM, path_plan)
@@ -462,6 +499,9 @@ def controlsd_thread(gctx=None):
   rk = Ratekeeper(100, print_delay_threshold=None)
 
   prof = Profiler(False)  # off by default
+
+  ffi, libmpc = lib_main.get_libmpc()
+  libmpc.init_model()
 
   while True:
     start_time = sec_since_boot()
