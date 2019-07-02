@@ -235,7 +235,7 @@ def state_control(frame, rcv_frame, plan, path_plan, CS, CP, state, events, v_cr
       extra_text = ""
       if e == "belowSteerSpeed":
         if is_metric:
-          extra_text = str(int(round(CP.minSteerSpeed * CV.MS_TO_MPH))) + " 🤖"
+          extra_text = str(int(round(CP.minSteerSpeed * CV.MS_TO_MPH))) + " mph"
           #extra_text = str(int(round(CP.minSteerSpeed * CV.MS_TO_KPH))) + " kph"
         else:
           extra_text = str(int(round(CP.minSteerSpeed * CV.MS_TO_MPH))) + " mph"
