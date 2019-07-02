@@ -70,8 +70,10 @@ class RadarInterface(object):
 
     if self.useTeslaRadar:
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-      self.delay = 0.05  # Delay of radar
+      self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
+      self.radar_fault = False
+      self.radar_wrong_config = False
       self.radarOffset = CarSettings().get_value("radarOffset")
     else:
       self.delay = 0.1  # Delay of radar
@@ -80,7 +82,7 @@ class RadarInterface(object):
       self.radar_wrong_config = False
       self.rcp = _create_nidec_can_parser()
     print(self.useTeslaRadar, self.radar_off_can)
-    #context = zmq.Context()
+    context = zmq.Context()
     self.logcan = messaging.sub_sock(service_list['can'].port)
   def update(self):
     canMonoTimes = []
