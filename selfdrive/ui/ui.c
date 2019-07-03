@@ -2870,6 +2870,10 @@ int main(int argc, char* argv[]) {
       ui_update(s);
       ds_update(s->awake && (!s->vision_connected || s->plus_state != 0), s->awake);
     }
+    if (s->awake) {
+      ds_update(s->awake, s->awake);
+    }
+    
    // wake up on button press while not driving
     if(ds.statePwr && (!s->vision_connected || s->plus_state != 0))
       set_awake(s, !s->awake);
