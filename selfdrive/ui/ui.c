@@ -965,6 +965,12 @@ static void draw_steering(UIState *s, float curvature) {
 static void draw_frame(UIState *s) {
   const UIScene *scene = &s->scene;
 
+  if (s->scene.frontview) {
+    glBindVertexArray(s->frame_vao[1]);
+  } else {
+    glBindVertexArray(s->frame_vao[0]);
+  }
+
   mat4 out_mat;
   float x1, x2, y1, y2;
   if (s->scene.frontview) {
