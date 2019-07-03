@@ -131,6 +131,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, radar
       'HUD_DISTANCE': hud.dist_lines,
       'ACC_ON': hud.car != 0,
       'SET_TO_X3': 0x03,
+      'IMPERIAL_UNIT': int(not is_metric),
     }
   else:
     acc_hud_values = {

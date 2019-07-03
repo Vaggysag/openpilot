@@ -1533,7 +1533,7 @@ static void ui_draw_vision_maxspeed(UIState *s) {
 
   // Draw Border
   nvgBeginPath(s->vg);
-  nvgRoundedRect(s->vg, viz_maxspeed_x, viz_maxspeed_y, viz_maxspeed_w, viz_maxspeed_h, 20);
+  nvgRoundedRect(s->vg, viz_maxspeed_x, viz_maxspeed_y, viz_maxspeed_w, viz_maxspeed_h, 30);
   if (is_set_over_limit) {
     nvgStrokeColor(s->vg, nvgRGBA(218, 111, 37, 255));
   } else if (is_speedlim_valid && !s->is_ego_over_limit) {
@@ -1568,7 +1568,7 @@ static void ui_draw_vision_maxspeed(UIState *s) {
     nvgFontFace(s->vg, "sans-semibold");
     nvgFontSize(s->vg, 42*2.5);
     nvgFillColor(s->vg, nvgRGBA(255, 255, 255, 100));
-    nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 242, "N/A", NULL);
+    nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 242, "-", NULL);
   }
 
 #ifdef DEBUG_TURN
@@ -1712,9 +1712,7 @@ static void ui_draw_vision_speed(UIState *s) {
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
 
   if (s->is_metric) {
-    //force mph
-    snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 2.2369363 + 0.5));
-    //snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 3.6 + 0.5));
+    snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 3.6 + 0.5));
   } else {
     snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 2.2369363 + 0.5));
   }
