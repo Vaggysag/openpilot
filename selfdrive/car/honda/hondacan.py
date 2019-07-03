@@ -130,8 +130,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, radar
       'HUD_LEAD': hud.car,
       'HUD_DISTANCE': hud.dist_lines,
       'ACC_ON': hud.car != 0,
-      'IMPERIAL_UNIT': int(is_metric),
-      'SET_TO_X3': 0x03,
+      'IMPERIAL_UNIT': int(not is_metric),
       'SET_TO_X1': 0x01,
     }
   else:
@@ -144,7 +143,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, radar
       'SET_ME_X03_2': hud.speed_units,
       'HUD_LEAD': hud.car,
       'HUD_DISTANCE': 3,    # max distance setting on display
-      'IMPERIAL_UNIT': int(is_metric),
+      'IMPERIAL_UNIT': int(not is_metric),
       'SET_ME_X01_2': 1,
       'SET_ME_X01': 1,
     }
