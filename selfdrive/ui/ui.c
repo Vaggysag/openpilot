@@ -965,12 +965,6 @@ static void draw_steering(UIState *s, float curvature) {
 static void draw_frame(UIState *s) {
   const UIScene *scene = &s->scene;
 
-  if (s->scene.frontview) {
-    glBindVertexArray(s->frame_vao[1]);
-  } else {
-    glBindVertexArray(s->frame_vao[0]);
-  }
-
   mat4 out_mat;
   float x1, x2, y1, y2;
   if (s->scene.frontview) {
@@ -999,7 +993,7 @@ static void draw_frame(UIState *s) {
   glActiveTexture(GL_TEXTURE0);
   if (s->scene.frontview && s->cur_vision_front_idx >= 0) {
     glBindTexture(GL_TEXTURE_2D, s->frame_front_texs[s->cur_vision_front_idx]);
-  } else if (!scene->frontview && s->cur_vision_idx >= 0) {
+  } else {
     glBindTexture(GL_TEXTURE_2D, s->frame_texs[s->cur_vision_idx]);
   }
 
