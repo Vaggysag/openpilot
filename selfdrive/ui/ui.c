@@ -72,7 +72,7 @@ const int header_h = 420;
 const int footer_h = 280;
 const int footer_y = vwp_h-bdr_s-footer_h;
 
-const int UI_FREQ = 30;   // Hz
+const int UI_FREQ = 60;   // Hz
 
 const int MODEL_PATH_MAX_VERTICES_CNT = 98;
 const int MODEL_LANE_PATH_CNT = 3;
@@ -965,19 +965,31 @@ static void draw_steering(UIState *s, float curvature) {
 static void draw_frame(UIState *s) {
   const UIScene *scene = &s->scene;
 
+  mat4 out_mat;
   float x1, x2, y1, y2;
   if (s->scene.frontview) {
-    glBindVertexArray(s->frame_vao[1]);
+    out_mat = device_transform; // full 16/9
+    // flip horizontally so it looks like a mirror
+    x1 = (float)scene->front_box_x / s->rgb_front_width;
+    x2 = (float)(scene->front_box_x + scene->front_box_width) / s->rgb_front_width;
+    y2 = (float)scene->front_box_y / s->rgb_front_height;
+    y1 = (float)(scene->front_box_y + scene->front_box_height) / s->rgb_front_height;
   } else {
-    glBindVertexArray(s->frame_vao[0]);
+    out_mat = matmul(device_transform, frame_transform);
+    x1 = 1.0;
+    x2 = 0.0;
+    y1 = 1.0;
+    y2 = 0.0;
   }
 
-  mat4 *out_mat;
-  if (s->scene.frontview || s->scene.fullview) {
-    out_mat = &s->front_frame_mat;
-  } else {
-    out_mat = &s->rear_frame_mat;
-  }
+  const uint8_t frame_indicies[] = {0, 1, 2, 0, 2, 3};
+  const float frame_coords[4][4] = {
+    {-1.0, -1.0, x2, y1}, //bl
+    {-1.0,  1.0, x2, y2}, //tl
+    { 1.0,  1.0, x1, y2}, //tr
+    { 1.0, -1.0, x1, y1}, //br
+  };
+
   glActiveTexture(GL_TEXTURE0);
   if (s->scene.frontview && s->cur_vision_front_idx >= 0) {
     glBindTexture(GL_TEXTURE_2D, s->frame_front_texs[s->cur_vision_front_idx]);
@@ -987,13 +999,15 @@ static void draw_frame(UIState *s) {
 
   glUseProgram(s->frame_program);
   glUniform1i(s->frame_texture_loc, 0);
-  glUniformMatrix4fv(s->frame_transform_loc, 1, GL_TRUE, out_mat->v);
-
+  glUniformMatrix4fv(s->frame_transform_loc, 1, GL_TRUE, out_mat.v);
+  glEnableVertexAttribArray(s->frame_pos_loc);
+  glVertexAttribPointer(s->frame_pos_loc, 2, GL_FLOAT, GL_FALSE,
+                        sizeof(frame_coords[0]), frame_coords);
+  glEnableVertexAttribArray(s->frame_texcoord_loc);
+  glVertexAttribPointer(s->frame_texcoord_loc, 2, GL_FLOAT, GL_FALSE,
+                        sizeof(frame_coords[0]), &frame_coords[0][2]);
   assert(glGetError() == GL_NO_ERROR);
-  glEnableVertexAttribArray(0);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const void*)0);
-  glDisableVertexAttribArray(0);
-  glBindVertexArray(0);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &frame_indicies[0]);
 }
 
 static inline bool valid_frame_pt(UIState *s, float x, float y) {
@@ -1098,7 +1112,7 @@ static void ui_draw_world(UIState *s) {
       fillAlpha = (int)(min(fillAlpha, 255));
     }
     draw_chevron(s, scene->lead_d_rel+2.7, scene->lead_y_rel, 25,
-                  nvgRGBA(201, 34, 49, fillAlpha), nvgRGBA(218, 202, 37, 255));
+                  nvgRGBA(201, 34, 49, fillAlpha), nvgRGBA(255, 255, 255, 255));
   }
 }
 
@@ -1707,8 +1721,8 @@ static void ui_draw_vision_speed(UIState *s) {
     if(s->scene.blinker_blinkingrate<0) s->scene.blinker_blinkingrate = 120;
   }
 
-  nvgBeginPath(s->vg);
-  nvgRect(s->vg, viz_speed_x, box_y, viz_speed_w, header_h);
+  //nvgBeginPath(s->vg);
+  //nvgRect(s->vg, viz_speed_x, box_y, viz_speed_w, header_h);
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
 
   if (s->is_metric) {
@@ -2043,6 +2057,7 @@ static void ui_draw(UIState *s) {
     nvgEndFrame(s->vg);
     glDisable(GL_BLEND);
   }
+  assert(glGetError() == GL_NO_ERROR);
 }
 
 static PathData read_path(cereal_ModelData_PathData_ptr pathp) {
@@ -2768,6 +2783,15 @@ int main(int argc, char* argv[]) {
   UIState *s = &uistate;
   ui_init(s);
   ds_init();
+  s->scene = (UIScene){
+      .frontview = getenv("FRONTVIEW") != NULL,
+      .fullview = getenv("FULLVIEW") != NULL,
+      .world_objects_visible = true, // Invisible until we receive a calibration message.
+      .gps_planner_active = true,
+      .ui_viz_rx = (box_x - sbr_w + bdr_s * 2),
+      .ui_viz_rw = (box_w + sbr_w - (bdr_s * 2)),
+      .ui_viz_ro = 0,
+  };
 
   pthread_t connect_thread_handle;
   err = pthread_create(&connect_thread_handle, NULL,

@@ -13,26 +13,26 @@ import math
 LOG_MPC = os.environ.get('LOG_MPC', False)
 
 # One, two and three bar distances (in s)
-ONE_BAR_DISTANCE = 0.9  # in seconds
-TWO_BAR_DISTANCE = 1.3  # in seconds
-THREE_BAR_DISTANCE = 1.8  # in seconds
-FOUR_BAR_DISTANCE = 2.3   # in seconds
+ONE_BAR_DISTANCE = 1.2  # in seconds
+TWO_BAR_DISTANCE = 1.5  # in seconds
+THREE_BAR_DISTANCE = 2.0  # in seconds
+FOUR_BAR_DISTANCE = 2.5   # in seconds
 
 TR = TWO_BAR_DISTANCE  # default interval
 
  # Variables that change braking profiles
 CITY_SPEED = 19.44  # braking profile changes when below this speed based on following dynamics below [m/s]
-STOPPING_DISTANCE = 1  # increase distance from lead car when stopped
+STOPPING_DISTANCE = 0  # increase distance from lead car when stopped
 
 # Braking profile changes (makes the car brake harder because it wants to be farther from the lead car - increase to brake harder)
 ONE_BAR_PROFILE = [ONE_BAR_DISTANCE, 2.5]
-ONE_BAR_PROFILE_BP = [0.0, 3.0]
+ONE_BAR_PROFILE_BP = [0.0, 2.5]
 
 TWO_BAR_PROFILE = [TWO_BAR_DISTANCE, 2.5]
-TWO_BAR_PROFILE_BP = [0.0, 3.0]
+TWO_BAR_PROFILE_BP = [0.0, 2.5]
 
 THREE_BAR_PROFILE = [THREE_BAR_DISTANCE, 2.5]
-THREE_BAR_PROFILE_BP = [0.0, 4.0]
+THREE_BAR_PROFILE_BP = [0.0, 3.0]
 
 class LongitudinalMpc(object):
   def __init__(self, mpc_id, live_longitudinal_mpc):
@@ -50,7 +50,6 @@ class LongitudinalMpc(object):
     self.v_rel = 0.0
     self.lastTR = 2
     self.last_cloudlog_t = 0.0
-    self.v_rel = 10
     self.last_cloudlog_t = 0.0
 
   def send_mpc_solution(self, qp_iterations, calculation_time):
