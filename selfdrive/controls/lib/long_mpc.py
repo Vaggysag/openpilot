@@ -21,8 +21,8 @@ FOUR_BAR_DISTANCE = 2.3   # in seconds
 TR = TWO_BAR_DISTANCE  # default interval
 
  # Variables that change braking profiles
-CITY_SPEED = 20.12  # braking profile changes when below this speed based on following dynamics below [m/s]
-STOPPING_DISTANCE = 1  # increase distance from lead car when stopped
+CITY_SPEED = 10  # braking profile changes when below this speed based on following dynamics below [m/s]
+STOPPING_DISTANCE = 0  # increase distance from lead car when stopped
 
 # Braking profile changes (makes the car brake harder because it wants to be farther from the lead car - increase to brake harder)
 ONE_BAR_PROFILE = [ONE_BAR_DISTANCE, 2.5]
@@ -32,7 +32,7 @@ TWO_BAR_PROFILE = [TWO_BAR_DISTANCE, 2.5]
 TWO_BAR_PROFILE_BP = [0.0, 3.0]
 
 THREE_BAR_PROFILE = [THREE_BAR_DISTANCE, 2.5]
-THREE_BAR_PROFILE_BP = [0.0, 4.5]
+THREE_BAR_PROFILE_BP = [0.0, 2.5]
 
 class LongitudinalMpc(object):
   def __init__(self, mpc_id, live_longitudinal_mpc):

@@ -2336,13 +2336,13 @@ void handle_message(UIState *s, void *which) {
     s->scene.speedlimit_valid = datad.speedLimitValid;
     s->scene.map_valid = datad.mapValid;
   } else if (eventd.which == cereal_Event_carState) {
-        struct cereal_CarState datad;
-        cereal_read_CarState(&datad, eventd.carState);
-        s->scene.brakeLights = datad.brakeLights;
-        if(s->scene.leftBlinker!=datad.leftBlinker || s->scene.rightBlinker!=datad.rightBlinker)
-          s->scene.blinker_blinkingrate = 100;
-        s->scene.leftBlinker = datad.leftBlinker;
-        s->scene.rightBlinker = datad.rightBlinker;
+    struct cereal_CarState datad;
+    cereal_read_CarState(&datad, eventd.carState);
+    s->scene.brakeLights = datad.brakeLights;
+    if(s->scene.leftBlinker!=datad.leftBlinker || s->scene.rightBlinker!=datad.rightBlinker)
+      s->scene.blinker_blinkingrate = 100;
+    s->scene.leftBlinker = datad.leftBlinker;
+    s->scene.rightBlinker = datad.rightBlinker;
   }
   capn_free(&ctx);
   zmq_msg_close(&msg);
