@@ -80,10 +80,10 @@ def radard_thread(gctx=None):
   radarState = messaging.pub_sock(service_list['radarState'].port)
   liveTracks = messaging.pub_sock(service_list['liveTracks'].port)
 
-  path_x = np.arange(0.0, 140.0, 0.1)    # 140 meters is max
+  path_x = np.arange(0.0, 160.0, 0.1)    # 140 meters is max
 
   # Time-alignment
-  rate = 1. / DT_MDL  # model and radar are both at 20Hz
+  rate = 20.   # tesla radar is at about 16Hz
   v_len = 20   # how many speed data points to remember for t alignment with rdr data
 
   active = 0
