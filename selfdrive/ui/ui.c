@@ -516,8 +516,6 @@ void ui_sound_init(char **error) {
 static void ui_init(UIState *s) {
   memset(s, 0, sizeof(UIState));
   s->ignoreLayout = true;
-  for(int i=0;i<LOGBUFFER_LENGTH;i++)
-    s->logBuffer[i] = 0;
 
   pthread_mutex_init(&s->lock, NULL);
   pthread_cond_init(&s->bg_cond, NULL);
