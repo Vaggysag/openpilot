@@ -310,10 +310,6 @@ class Cluster(object):
     else:
       return False
 
-
-    else:
-      return False
-
   def is_potential_fcw(self):
     # is this cluster trustrable enough for triggering fcw?
     # fcw can trigger only on clusters that have been fused vision model for at least 20 frames
