@@ -101,6 +101,17 @@ const int alert_sizes[] = {
   [ALERTSIZE_FULL] = vwp_h,
 };
 
+#define UIEVENT_BTN1  1
+#define UIEVENT_BTN2  2
+#define UIEVENT_BTN3  3
+#define UIEVENT_BTN4  4
+#define UIEVENT_BTN5  5
+#define UIEVENT_BTN6  6
+#define UIEVENT_BTN7  7
+#define UIEVENT_BTN8  8
+#define UIEVENT_STARTUP 10
+#define UIEVENT_SHUTDOWN 11
+
 const int SET_SPEED_NA = 255;
 
 // TODO: this is also hardcoded in common/transformations/camera.py
@@ -183,6 +194,8 @@ typedef struct UIScene {
   bool leftBlinker;
   bool rightBlinker;
   int blinker_blinkingrate;
+  int spammedButton;
+  int spammedButtonTimeout;
 
   bool is_playing_alert;
 } UIScene;
@@ -502,6 +515,9 @@ void ui_sound_init(char **error) {
 
 static void ui_init(UIState *s) {
   memset(s, 0, sizeof(UIState));
+  s->ignoreLayout = true;
+  for(int i=0;i<LOGBUFFER_LENGTH;i++)
+    s->logBuffer[i] = 0;
 
   pthread_mutex_init(&s->lock, NULL);
   pthread_cond_init(&s->bg_cond, NULL);
@@ -517,7 +533,6 @@ static void ui_init(UIState *s) {
   s->livempc_sock_raw = sub_sock(s->ctx, "tcp://127.0.0.1:8035");
   s->plus_sock_raw = sub_sock(s->ctx, "tcp://127.0.0.1:8037");
   s->gps_sock_raw = sub_sock(s->ctx, "tcp://127.0.0.1:8032");
-  s->carstate_sock_raw = sub_sock(s->ctx, "tcp://127.0.0.1:8021");
 
 #ifdef SHOW_SPEEDLIMIT
   s->map_data_sock_raw = sub_sock(s->ctx, "tcp://127.0.0.1:8065");
@@ -663,9 +678,7 @@ static void ui_init_vision(UIState *s, const VisionStreamBufs back_bufs,
       .front_box_height = ui_info.front_box_height,
       .world_objects_visible = false,  // Invisible until we receive a calibration message.
       .gps_planner_active = false,
-      .ui_viz_rx = (box_x - sbr_w + bdr_s * 2),
-      .ui_viz_rw = (box_w + sbr_w - (bdr_s * 2)),
-      .ui_viz_ro = 0,
+      .spammedButton = -1,
   };
 
   s->rgb_width = back_bufs.width;
@@ -862,7 +875,9 @@ static void update_track_data(UIState *s, bool is_mpc, track_vertices_data *pvd)
 
     vec4 p_car_space = (vec4){{px, py, 0., 1.}};
     vec3 p_full_frame = car_space_to_full_frame(s, p_car_space);
-    if (p_full_frame.v[0] < 0. || p_full_frame.v[1] < 0.) {
+    float x = p_full_frame.v[0];
+    float y = p_full_frame.v[1];
+    if (x < 0 || y < 0) {
       continue;
     }
     pvd->v[pvd->cnt].x = p_full_frame.v[0];
@@ -2335,6 +2350,8 @@ static void ui_update(UIState *s) {
   int err;
 
   if (s->vision_connect_firstrun) {
+    s->carstate_sock_raw = sub_sock(s->ctx, "tcp://127.0.0.1:8021");
+    assert(s->carstate_sock_raw);
     s->lastdriveEnd = 0;
     // cant run this in connector thread because opengl.
     // do this here for now in lieu of a run_on_main_thread event
@@ -2493,9 +2510,11 @@ static void ui_update(UIState *s) {
 #endif
 
     if (s->vision_connected) {
+      num_polls++;
       plus_sock_num++;
       polls[8].socket = s->carstate_sock_raw;
       polls[8].events = ZMQ_POLLIN;
+      num_polls++;
       plus_sock_num++;
       polls[9].socket = s->gps_sock_raw;
       polls[9].events = ZMQ_POLLIN;
@@ -2769,9 +2788,10 @@ int main(int argc, char* argv[]) {
       .fullview = getenv("FULLVIEW") != NULL,
       .world_objects_visible = true, // Invisible until we receive a calibration message.
       .gps_planner_active = true,
-      .ui_viz_rx = (box_x - sbr_w + bdr_s * 2),
-      .ui_viz_rw = (box_w + sbr_w - (bdr_s * 2)),
+      .ui_viz_rx = (box_x - sbr_w + bdr_is * 2),
+      .ui_viz_rw = (box_w + sbr_w - (bdr_is * 2)),
       .ui_viz_ro = 0,
+      .spammedButton = -1,
   };
 
   pthread_t connect_thread_handle;
@@ -2907,7 +2927,11 @@ int main(int argc, char* argv[]) {
       }
 #endif
     }
-    
+    if(s->scene.spammedButton!=-1) {
+      s->scene.spammedButtonTimeout--;
+      if(s->scene.spammedButtonTimeout<=0)
+        s->scene.spammedButton=-1;
+    }
     if (s->volume_timeout > 0) {
       s->volume_timeout--;
     } else {
