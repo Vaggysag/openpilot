@@ -233,7 +233,6 @@ class Cluster(object):
       "status": True,
       "fcw": self.is_potential_fcw(),
       "aLeadTau": float(self.aLeadTau),
-      "trackId": int(self.track_id % 32),
     }
 
   def __str__(self):
@@ -314,7 +313,7 @@ class Cluster(object):
       lead_cluster = lead_clusters[0]
       # check if the new lead is too close and roughly at the same speed of the first lead:
       # it might just be the second axle of the same vehicle
-      return ((self.dRel - lead_cluster.dRel > 8.) and (lead_cluster.oClass > 0))  or ((self.dRel - lead_cluster.dRel > 15.) and (lead_cluster.oClass == 0)) or abs(self.vRel - lead_cluster.vRel) > 1.
+      return (self.dRel - lead_cluster.dRel) > 8. or abs(self.vRel - lead_cluster.vRel) > 1.
     else:
       return False
 
