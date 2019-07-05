@@ -72,7 +72,7 @@ class RadarInterface(object):
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
-      self.trackId = 1
+      self.trackId = 0
       self.radar_fault = False
       self.radar_wrong_config = False
       self.radarOffset = CarSettings().get_value("radarOffset")
