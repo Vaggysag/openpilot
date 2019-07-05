@@ -2,6 +2,7 @@ import numpy as np
 
 from common.numpy_fast import clip, interp
 from common.kalman.simple_kalman import KF1D
+from selfdrive.car.honda.readconfig import CarSettings
 
 _LEAD_ACCEL_TAU = 1.5
 NO_FUSION_SCORE = 100 # bad default fusion score
@@ -76,14 +77,14 @@ class Track(object):
     else:
       # estimate acceleration
       # TODO: use Kalman filter
-      a_rel_unfilt = (self.vRel - self.vRelPrev) / ts
-      a_rel_unfilt = clip(a_rel_unfilt, -10., 10.)
-      self.aRel = k_a_lead * a_rel_unfilt + (1 - k_a_lead) * self.aRel
+      #a_rel_unfilt = (self.vRel - self.vRelPrev) / ts
+      #a_rel_unfilt = clip(a_rel_unfilt, -10., 10.)
+      #self.aRel = k_a_lead * a_rel_unfilt + (1 - k_a_lead) * self.aRel
 
       # TODO: use Kalman filter
       # neglect steer override cases as dPath is too noisy
-      v_lat_unfilt = 0. if steer_override else (self.dPath - self.dPathPrev) / ts
-      self.vLat = k_v_lat * v_lat_unfilt + (1 - k_v_lat) * self.vLat
+      #v_lat_unfilt = 0. if steer_override else (self.dPath - self.dPathPrev) / ts
+      #self.vLat = k_v_lat * v_lat_unfilt + (1 - k_v_lat) * self.vLat
 
       self.kf.update(self.vLead)
 
@@ -135,6 +136,8 @@ def mean(l):
 class Cluster(object):
   def __init__(self):
     self.tracks = set()
+    self.frame_delay = 0.2
+    self.useTeslaRadar = CarSettings.get_value("useTeslaRadar")
 
   def add(self, t):
     # add the first track
@@ -143,7 +146,7 @@ class Cluster(object):
   # TODO: make generic
   @property
   def dRel(self):
-    return mean([t.dRel for t in self.tracks])
+    return min([t.dRel for t in self.tracks])
 
   @property
   def yRel(self):
@@ -214,8 +217,11 @@ class Cluster(object):
     return mean([t.track_id for t in self.tracks])
 
   def toRadarState(self):
+    dRel_delta_estimate = 0.
+    if self.useTeslaRadar:
+      dRel_delta_estimate = (self.vRel + self.aRel * self.frame_delay / 2.) * self.frame_delay
     return {
-      "dRel": float(self.dRel) - RDR_TO_LDR,
+      "dRel": float(self.dRel + dRel_delta_estimate) - RDR_TO_LDR,
       "yRel": float(self.yRel),
       "vRel": float(self.vRel),
       "aRel": float(self.aRel),
@@ -227,6 +233,7 @@ class Cluster(object):
       "status": True,
       "fcw": self.is_potential_fcw(),
       "aLeadTau": float(self.aLeadTau),
+      "trackId": int(self.track_id % 32),
     }
 
   def __str__(self):
@@ -291,6 +298,15 @@ class Cluster(object):
 
     return abs(d_path) < abs(dy/2.)  and not self.stationary #and not self.oncoming
 
+  def is_truck(self,lead_clusters):
+    return False
+    if len(lead_clusters) > 0:
+      lead_cluster = lead_clusters[0]
+      # check if the new lead is too close and roughly at the same speed of the first lead:
+      # it might just be the second axle of the same vehicle
+      return (self.dRel - lead_cluster.dRel < 4.5) and (self.dRel - lead_cluster.dRel > 0.5) and (abs(self.yRel - lead_cluster.yRel) < 2.) and (abs(self.vRel - lead_cluster.vRel) < 0.2)
+    else:
+      return False
   
 
   def is_potential_lead2(self, lead_clusters):
@@ -298,7 +314,7 @@ class Cluster(object):
       lead_cluster = lead_clusters[0]
       # check if the new lead is too close and roughly at the same speed of the first lead:
       # it might just be the second axle of the same vehicle
-      return (self.dRel - lead_cluster.dRel) > 8. or abs(self.vRel - lead_cluster.vRel) > 1.
+      return ((self.dRel - lead_cluster.dRel > 8.) and (lead_cluster.oClass > 0))  or ((self.dRel - lead_cluster.dRel > 15.) and (lead_cluster.oClass == 0)) or abs(self.vRel - lead_cluster.vRel) > 1.
     else:
       return False
 

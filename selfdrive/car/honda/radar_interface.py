@@ -72,6 +72,7 @@ class RadarInterface(object):
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
+      self.trackId = 1
       self.radar_fault = False
       self.radar_wrong_config = False
       self.radarOffset = CarSettings().get_value("radarOffset")
@@ -116,10 +117,15 @@ class RadarInterface(object):
           cpt = self.rcp.vl[ii]
           if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist']==0) or (not cpt['Tracked']):
             self.valid_cnt[ii] = 0    # reset counter
+            if ii in self.pts:
+              del self.pts[ii]
           if cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
             self.valid_cnt[ii] += 1
           else:
             self.valid_cnt[ii] = max(self.valid_cnt[ii] -1, 0)
+            if (self.valid_cnt[ii]==0) and (ii in self.pts):
+              del self.pts[ii]
+
 
           #score = self.rcp.vl[ii+16]['SCORE']
           #print ii, self.valid_cnt[ii], cpt['Valid'], cpt['LongDist'], cpt['LatDist']
@@ -132,12 +138,13 @@ class RadarInterface(object):
               (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and (self.rcp.vl[ii+1]['Class'] < 4): # and ((self.rcp.vl[ii+1]['MovingState']<3) or (self.rcp.vl[ii+1]['Class'] > 0)):
             if ii not in self.pts and ( cpt['Tracked']):
               self.pts[ii] = car.RadarData.RadarPoint.new_message()
-              self.pts[ii].trackId = int((ii - 0x310)/3)
+              self.pts[ii].trackId = self.trackId
+              self.trackId = (self.trackId % 30000) + 1
             if ii in self.pts:
               self.pts[ii].dRel = cpt['LongDist']  # from front of car
               self.pts[ii].yRel = cpt['LatDist']  - self.radarOffset
               self.pts[ii].vRel = cpt['LongSpeed']
-              self.pts[ii].aRel = float('nan')
+              self.pts[ii].aRel = cpt['LongAccel']
               self.pts[ii].yvRel = float('nan')
               self.pts[ii].measured = True 
               #self.pts[ii].aRel = cpt['LongAccel']
