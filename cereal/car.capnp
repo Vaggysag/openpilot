@@ -359,7 +359,6 @@ struct CarParams {
     kiV @3 :List(Float32);
     deadzoneBP @4 :List(Float32);
     deadzoneV @5 :List(Float32);
-    reactMPC @4 :Float32;
   }
 
 
@@ -368,6 +367,7 @@ struct CarParams {
     innerLoopGain @1 :Float32;
     timeConstant @2 :Float32;
     actuatorEffectiveness @3 :Float32;
+    reactMPC @4 :Float32;
   }
 
 
