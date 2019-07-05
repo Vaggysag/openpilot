@@ -3,6 +3,7 @@ from selfdrive.controls.lib.drive_helpers import get_steer_max
 from cereal import car
 from cereal import log
 from common.realtime import sec_since_boot
+from common.numpy_fast import interp
 
 
 class LatControlPID(object):

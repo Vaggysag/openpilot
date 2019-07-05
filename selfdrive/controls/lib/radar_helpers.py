@@ -2,7 +2,6 @@ import numpy as np
 
 from common.numpy_fast import clip, interp
 from common.kalman.simple_kalman import KF1D
-from selfdrive.car.honda.readconfig import CarSettings
 
 _LEAD_ACCEL_TAU = 1.5
 NO_FUSION_SCORE = 100 # bad default fusion score
@@ -136,13 +135,10 @@ def mean(l):
 class Cluster(object):
   def __init__(self):
     self.tracks = set()
-    self.frame_delay = 0.2
 
   def add(self, t):
     # add the first track
     self.tracks.add(t)
-    self.frame_delay = 0.2
-    self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
 
   # TODO: make generic
   @property
@@ -218,11 +214,8 @@ class Cluster(object):
     return mean([t.track_id for t in self.tracks])
 
   def toRadarState(self):
-    dRel_delta_estimate = 0.
-    if self.useTeslaRadar:
-      dRel_delta_estimate = (self.vRel + self.aRel * self.frame_delay / 2.) * self.frame_delay
     return {
-      "dRel": float(self.dRel + dRel_delta_estimate) - RDR_TO_LDR,
+      "dRel": float(self.dRel) - RDR_TO_LDR,
       "yRel": float(self.yRel),
       "vRel": float(self.vRel),
       "aRel": float(self.aRel),
@@ -305,8 +298,7 @@ class Cluster(object):
       lead_cluster = lead_clusters[0]
       # check if the new lead is too close and roughly at the same speed of the first lead:
       # it might just be the second axle of the same vehicle
-      #return (self.dRel - lead_cluster.dRel) > 8. or abs(self.vRel - lead_cluster.vRel) > 1.
-      return (self.dRel - lead_cluster.dRel < 4.5) and (self.dRel - lead_cluster.dRel > 0.5) and (abs(self.yRel - lead_cluster.yRel) < 1.) and (abs(self.vRel - lead_cluster.vRel) < 0.2)
+      return (self.dRel - lead_cluster.dRel) > 8. or abs(self.vRel - lead_cluster.vRel) > 1.
     else:
       return False
 

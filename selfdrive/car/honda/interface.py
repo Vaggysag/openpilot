@@ -185,20 +185,11 @@ class CarInterface(object):
     #ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
     #ret.lateralTuning.pid.kf = 0.00006 # conservative feed-forward
 
-    if candidate in (CAR.INSIGHT):
-      ret.lateralTuning.init('indi')
-      ret.steerRateCost = 0.05
-      ret.lateralTuning.indi.innerLoopGain = 4.0
-      ret.lateralTuning.indi.outerLoopGain = 2.0
-      ret.lateralTuning.indi.timeConstant = 1.0
-      ret.lateralTuning.indi.reactMPC = 0.25
-      ret.lateralTuning.indi.actuatorEffectiveness = 1.0
-    else:
-      ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
-      ret.lateralTuning.pid.kf = 0.00006 # conservative feed-forward
-      ret.steerRateCost = 0.5
-      ret.lateralTuning.pid.dampTime = 0.1
-      ret.lateralTuning.pid.reactMPC = -0.05
+    ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
+    ret.lateralTuning.pid.kf = 0.00006 # conservative feed-forward
+    ret.steerRateCost = 0.5
+    ret.lateralTuning.pid.dampTime = 0.1
+    ret.lateralTuning.pid.reactMPC = -0.05
 
     if candidate in [CAR.CIVIC]:
       stop_and_go = True

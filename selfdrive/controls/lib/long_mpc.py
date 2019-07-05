@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from common.numpy_fast import interp
 
 import selfdrive.messaging as messaging
 from selfdrive.swaglog import cloudlog
@@ -7,7 +8,7 @@ from common.realtime import sec_since_boot
 from selfdrive.controls.lib.radar_helpers import _LEAD_ACCEL_TAU
 from selfdrive.controls.lib.longitudinal_mpc import libmpc_py
 from selfdrive.controls.lib.drive_helpers import MPC_COST_LONG
-
+import time
 LOG_MPC = os.environ.get('LOG_MPC', False)
 
 
@@ -153,24 +154,24 @@ class LongitudinalMpc(object):
       return 1.8
     elif (self.car_state.leftBlinker or self.car_state.rightBlinker) and self.v_ego > 8.9408:  # don't get super close when signaling in a turn lane
       if self.last_cost != 1.0:
-        self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.libmpc.run_mpc(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
         self.last_cost = 1.0
       return 0.9  # accelerate for lane change
     elif read_distance_lines == 1:
       if self.last_cost != 1.0:
-        self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.libmpc.run_mpc(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
         self.last_cost = 1.0
       return 0.9  # 10m at 40km/hr
     elif read_distance_lines == 2:
       self.save_car_data()
       TR = self.smooth_follow()
       cost = self.get_cost(TR)
-      self.libmpc.change_tr(MPC_COST_LONG.TTC, cost, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+      self.libmpc.init(MPC_COST_LONG.TTC, cost, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
       self.last_cost = cost
       return TR
     else:
       if self.last_cost != 0.05:
-        self.libmpc.change_tr(MPC_COST_LONG.TTC, 0.05, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.libmpc.run_mpc(MPC_COST_LONG.TTC, 0.05, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
         self.last_cost = 0.05
       return 2.7  # 30m at 40km/hr
 
