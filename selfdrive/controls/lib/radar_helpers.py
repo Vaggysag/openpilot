@@ -2,7 +2,7 @@ import numpy as np
 
 from common.numpy_fast import clip, interp
 from common.kalman.simple_kalman import KF1D
-from selfdrive.car.honda.readconfig import CarSettings
+from selfdrive.car.honda.readconfig import read_config_file,CarSettings
 
 _LEAD_ACCEL_TAU = 1.5
 NO_FUSION_SCORE = 100 # bad default fusion score
@@ -137,7 +137,7 @@ class Cluster(object):
   def __init__(self):
     self.tracks = set()
     self.frame_delay = 0.2
-    self.useTeslaRadar = CarSettings.get_value("useTeslaRadar")
+    self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
 
   def add(self, t):
     # add the first track
