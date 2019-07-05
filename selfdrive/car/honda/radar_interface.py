@@ -72,7 +72,7 @@ class RadarInterface(object):
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
-      self.trackId = 0
+      self.track_id = 0
       self.radar_fault = False
       self.radar_wrong_config = False
       self.radarOffset = CarSettings().get_value("radarOffset")
@@ -138,8 +138,9 @@ class RadarInterface(object):
               (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and (self.rcp.vl[ii+1]['Class'] < 4): # and ((self.rcp.vl[ii+1]['MovingState']<3) or (self.rcp.vl[ii+1]['Class'] > 0)):
             if ii not in self.pts and ( cpt['Tracked']):
               self.pts[ii] = car.RadarData.RadarPoint.new_message()
-              self.pts[ii].trackId = self.trackId
-              self.trackId = (self.trackId % 30000) + 1
+              #self.pts[ii].trackId = int((ii - 0x310)/3)
+              self.pts[ii].trackId = self.track_id
+              self.track_id = (self.track_id % 30000) + 1
             if ii in self.pts:
               self.pts[ii].dRel = cpt['LongDist']  # from front of car
               self.pts[ii].yRel = cpt['LatDist']  - self.radarOffset
