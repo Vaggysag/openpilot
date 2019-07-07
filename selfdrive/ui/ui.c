@@ -1484,6 +1484,7 @@ static void bb_ui_draw_UI(UIState *s)
     const int bb_dmr_w = 180;
     const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_is * 2);
     const int bb_dmr_y = (box_y + (bdr_is * 1.5)) + 220;
+    //bool hasSidebar = !s->scene.uilayout_sidebarcollapsed;
 
     bb_ui_draw_measures_right(s, bb_dml_x, bb_dml_y, bb_dml_w);
     bb_ui_draw_measures_left(s, bb_dmr_x, bb_dmr_y, bb_dmr_w);
@@ -1889,6 +1890,7 @@ static void ui_draw_vision_header(UIState *s) {
   nvgRect(s->vg, ui_viz_rx, box_y, ui_viz_rw, header_h);
   nvgFill(s->vg);
 
+  //bool hasSidebar = !s->scene.uilayout_sidebarcollapsed;
   ui_draw_vision_maxspeed(s);
 
 #ifdef SHOW_SPEEDLIMIT
@@ -2317,13 +2319,13 @@ void handle_message(UIState *s, void *which) {
     bool hasSidebar = !s->scene.uilayout_sidebarcollapsed;
     bool mapEnabled = s->scene.uilayout_mapenabled;
     if (mapEnabled) {
-      s->scene.ui_viz_rx = hasSidebar ? (box_x+nav_w) : (box_x+nav_w-(bdr_is*4));
-      s->scene.ui_viz_rw = hasSidebar ? (box_w-nav_w) : (box_w-nav_w+(bdr_is*4));
-      s->scene.ui_viz_ro = -(sbr_w + 4*bdr_is);
+      s->scene.ui_viz_rx = hasSidebar ? (box_x+nav_w) : (box_x+nav_w-(bdr_s*4));
+      s->scene.ui_viz_rw = hasSidebar ? (box_w-nav_w) : (box_w-nav_w+(bdr_s*4));
+      s->scene.ui_viz_ro = -(sbr_w + 4*bdr_s);
     } else {
-      s->scene.ui_viz_rx = hasSidebar ? box_x : (box_x-sbr_w+bdr_is*2);
-      s->scene.ui_viz_rw = hasSidebar ? box_w : (box_w+sbr_w-(bdr_is*2));
-      s->scene.ui_viz_ro = hasSidebar ? -(sbr_w - 6*bdr_is) : 0;
+      s->scene.ui_viz_rx = hasSidebar ? box_x : (box_x-sbr_w+bdr_s*2);
+      s->scene.ui_viz_rw = hasSidebar ? box_w : (box_w+sbr_w-(bdr_s*2));
+      s->scene.ui_viz_ro = hasSidebar ? -(sbr_w - 6*bdr_s) : 0;
     }
   } else if (eventd.which == cereal_Event_liveMapData) {
     struct cereal_LiveMapData datad;

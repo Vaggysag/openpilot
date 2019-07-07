@@ -78,7 +78,8 @@ def get_can_signals(CP):
     signals += [("CAR_GAS", "GAS_PEDAL_2", 0),
                 ("MAIN_ON", "SCM_FEEDBACK", 0),
                 ("EPB_STATE", "EPB_STATUS", 0),
-                ("CRUISE_SPEED", "ACC_HUD", 0)]
+                ("CRUISE_SPEED", "ACC_HUD", 0),
+                ("IMPERIAL_UNIT", "ACC_HUD", 0)]
     checks += [("GAS_PEDAL_2", 100)]
 
     # TODO: why were these removed from bosch?
@@ -343,6 +344,7 @@ class CarState(object):
       self.read_distance_lines_prev = self.read_distance_lines
     # TODO: discover the CAN msg that has the imperial unit bit for all other cars
     self.is_metric = not cp.vl["HUD_SETTING"]['IMPERIAL_UNIT'] if self.CP.carFingerprint in (CAR.CIVIC) else False
+    self.is_metric = 3
 
 # carstate standalone tester
 if __name__ == '__main__':
