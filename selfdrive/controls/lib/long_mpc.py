@@ -154,12 +154,12 @@ class LongitudinalMpc(object):
       return 1.8
     elif (self.car_state.leftBlinker or self.car_state.rightBlinker) and self.v_ego > 8.9408:  # don't get super close when signaling in a turn lane
       if self.last_cost != 1.0:
-        self.libmpc.run_mpc(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.libmpc.init(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
         self.last_cost = 1.0
       return 0.9  # accelerate for lane change
     elif read_distance_lines == 1:
       if self.last_cost != 1.0:
-        self.libmpc.run_mpc(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.libmpc.init(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
         self.last_cost = 1.0
       return 0.9  # 10m at 40km/hr
     elif read_distance_lines == 2:
@@ -171,7 +171,7 @@ class LongitudinalMpc(object):
       return TR
     else:
       if self.last_cost != 0.05:
-        self.libmpc.run_mpc(MPC_COST_LONG.TTC, 0.05, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.libmpc.init(MPC_COST_LONG.TTC, 0.05, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
         self.last_cost = 0.05
       return 2.7  # 30m at 40km/hr
 
