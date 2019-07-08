@@ -175,8 +175,8 @@ class LongitudinalMpc(object):
       self.save_car_data()
       TR = 1.1
       cost = self.get_cost(TR)
-      self.libmpc.change_tr(MPC_COST_LONG.TTC, cost, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-      self.last_cost = cost
+      self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+      self.last_cost = 1.0
       return TR
     else:
       if self.last_cost != 0.05:
