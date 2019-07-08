@@ -955,10 +955,10 @@ const UIScene *scene = &s->scene;
     //const uint8_t *clr = bg_colors[s->status];
     if(((int)(scene->angleSteers) < -6) || ((int)(scene->angleSteers) > 6)) {
       track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
-        nvgRGBA(255, 69, 0, 255), nvgRGBA(255, 69, 0, 255/2));
+        nvgRGBA(225, 69, 0, 255), nvgRGBA(225, 69, 0, 255/2));
     } else {
       track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
-        nvgRGBA(0, 255, 0, 255), nvgRGBA(0, 255, 0, 255/2));
+        nvgRGBA(0, 200, 0, 255), nvgRGBA(0, 200, 0, 255/2));
     }
     //nvgRGBA(clr[0], clr[1], clr[2], 255), nvgRGBA(clr[0], clr[1], clr[2], 255/2));
   } else {
