@@ -194,8 +194,6 @@ typedef struct UIScene {
   bool leftBlinker;
   bool rightBlinker;
   int blinker_blinkingrate;
-  int spammedButton;
-  int spammedButtonTimeout;
 
   bool is_playing_alert;
 } UIScene;
@@ -676,7 +674,6 @@ static void ui_init_vision(UIState *s, const VisionStreamBufs back_bufs,
       .front_box_height = ui_info.front_box_height,
       .world_objects_visible = false,  // Invisible until we receive a calibration message.
       .gps_planner_active = false,
-      .spammedButton = -1,
   };
 
   s->rgb_width = back_bufs.width;
@@ -952,13 +949,16 @@ const UIScene *scene = &s->scene;
   NVGpaint track_bg;
   if (scene->engaged) {
     // Draw colored MPC track
+    // Why isn't is_mpc not working?
     //const uint8_t *clr = bg_colors[s->status];
     if(((int)(scene->angleSteers) < -6) || ((int)(scene->angleSteers) > 6)) {
+      // Draw orange vision track
       track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
-        nvgRGBA(225, 69, 0, 255), nvgRGBA(225, 69, 0, 255/2));
+        nvgRGBA(225, 100, 0, 255), nvgRGBA(255, 115, 3, 255/2));
     } else {
+      // Draw green vision track
       track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
-        nvgRGBA(0, 200, 0, 255), nvgRGBA(0, 200, 0, 255/2));
+        nvgRGBA(23, 170, 66, 255), nvgRGBA(19, 143, 55, 255/2));
     }
     //nvgRGBA(clr[0], clr[1], clr[2], 255), nvgRGBA(clr[0], clr[1], clr[2], 255/2));
   } else {
@@ -2797,7 +2797,6 @@ int main(int argc, char* argv[]) {
       .ui_viz_rx = (box_x - sbr_w + bdr_is * 2),
       .ui_viz_rw = (box_w + sbr_w - (bdr_is * 2)),
       .ui_viz_ro = 0,
-      .spammedButton = -1,
   };
 
   pthread_t connect_thread_handle;
@@ -2932,11 +2931,6 @@ int main(int argc, char* argv[]) {
         old_draws = draws;
       }
 #endif
-    }
-    if(s->scene.spammedButton!=-1) {
-      s->scene.spammedButtonTimeout--;
-      if(s->scene.spammedButtonTimeout<=0)
-        s->scene.spammedButton=-1;
     }
     if (s->volume_timeout > 0) {
       s->volume_timeout--;
