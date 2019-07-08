@@ -952,9 +952,15 @@ const UIScene *scene = &s->scene;
   NVGpaint track_bg;
   if (is_mpc) {
     // Draw colored MPC track
-    const uint8_t *clr = bg_colors[s->status];
-    track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
-      nvgRGBA(clr[0], clr[1], clr[2], 255), nvgRGBA(clr[0], clr[1], clr[2], 255/2));
+    //const uint8_t *clr = bg_colors[s->status];
+    if(((int)(scene->angleSteers) < -6) || ((int)(scene->angleSteers) > 6)) {
+      track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
+        nvgRGBA(255, 69, 0, 255), nvgRGBA(255, 69, 0, 255/2));
+    } else {
+      track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
+        nvgRGBA(0, 255, 0, 255), nvgRGBA(0, 255, 0, 255/2));
+    }
+    //nvgRGBA(clr[0], clr[1], clr[2], 255), nvgRGBA(clr[0], clr[1], clr[2], 255/2));
   } else {
     // Draw white vision track
     track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
@@ -1534,7 +1540,7 @@ static void ui_draw_vision_maxspeed(UIState *s) {
 
   // Draw Background
   nvgBeginPath(s->vg);
-  nvgRoundedRect(s->vg, viz_maxspeed_x, viz_maxspeed_y, viz_maxspeed_w, viz_maxspeed_h, 30);
+  nvgRoundedRect(s->vg, viz_maxspeed_x, viz_maxspeed_y, viz_maxspeed_w, viz_maxspeed_h, 20);
   if (is_set_over_limit) {
     nvgFillColor(s->vg, nvgRGBA(218, 111, 37, 180));
   } else {
@@ -1544,7 +1550,7 @@ static void ui_draw_vision_maxspeed(UIState *s) {
 
   // Draw Border
   nvgBeginPath(s->vg);
-  nvgRoundedRect(s->vg, viz_maxspeed_x, viz_maxspeed_y, viz_maxspeed_w, viz_maxspeed_h, 30);
+  nvgRoundedRect(s->vg, viz_maxspeed_x, viz_maxspeed_y, viz_maxspeed_w, viz_maxspeed_h, 20);
   if (is_set_over_limit) {
     nvgStrokeColor(s->vg, nvgRGBA(218, 111, 37, 255));
   } else if (is_speedlim_valid && !s->is_ego_over_limit) {
@@ -1566,7 +1572,7 @@ static void ui_draw_vision_maxspeed(UIState *s) {
   } else {
     nvgFillColor(s->vg, nvgRGBA(255, 255, 255, 100));
   }
-  nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 148, "MAX", NULL);
+  nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 148-bdr_is, "MAX", NULL);
 
   // Draw Speed Text
   nvgFontFace(s->vg, "sans-bold");
@@ -1574,12 +1580,12 @@ static void ui_draw_vision_maxspeed(UIState *s) {
   if (is_cruise_set) {
     snprintf(maxspeed_str, sizeof(maxspeed_str), "%d", maxspeed_calc);
     nvgFillColor(s->vg, nvgRGBA(255, 255, 255, 255));
-    nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 242, maxspeed_str, NULL);
+    nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 242-bdr_is, maxspeed_str, NULL);
   } else {
     nvgFontFace(s->vg, "sans-semibold");
     nvgFontSize(s->vg, 42*2.5);
     nvgFillColor(s->vg, nvgRGBA(255, 255, 255, 100));
-    nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 242, "-", NULL);
+    nvgText(s->vg, viz_maxspeed_x+(viz_maxspeed_xo/2)+(viz_maxspeed_w/2), 242-bdr_is, "-", NULL);
   }
 
 #ifdef DEBUG_TURN
@@ -1725,7 +1731,7 @@ static void ui_draw_vision_speed(UIState *s) {
   if (s->is_metric) {
     snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 3.6 + 0.5));
   } else {
-    snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 2.2369363 + 0.5));
+    snprintf(speed_str, sizeof(speed_str), "%d", (int)(speed * 2.2374144 + 0.5));
   }
   nvgFontFace(s->vg, "sans-bold");
   nvgFontSize(s->vg, 96*2.5);
