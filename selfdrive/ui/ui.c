@@ -950,7 +950,7 @@ const UIScene *scene = &s->scene;
   nvgClosePath(s->vg);
 
   NVGpaint track_bg;
-  if (is_mpc) {
+  if (scene->engaged) {
     // Draw colored MPC track
     //const uint8_t *clr = bg_colors[s->status];
     if(((int)(scene->angleSteers) < -6) || ((int)(scene->angleSteers) > 6)) {
