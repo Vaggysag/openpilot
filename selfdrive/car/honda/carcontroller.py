@@ -10,8 +10,8 @@ from common.params import Params
 
 # Accel limits
 ACCEL_HYST_GAP = 0.02 # don't change accel command for small oscilalitons within this value
-ACCEL_MAX = 600.
-ACCEL_MIN = -800.
+ACCEL_MAX = 800.
+ACCEL_MIN = -1599.
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 
 def accel_hysteresis(accel, accel_steady, enabled):
@@ -50,8 +50,8 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
     brake_steady = brake + brake_hyst_gap
   brake = brake_steady
 
-  if (car_fingerprint in (CAR.ACURA_ILX, CAR.CRV, CAR.INSIGHT)) and brake > 0.0:
-    brake += 0.20
+  if (car_fingerprint in (CAR.ACURA_ILX, CAR.CRV)) and brake > 0.0:
+    brake += 0.15
 
   return brake, braking, brake_steady
 
@@ -159,7 +159,7 @@ class CarController(object):
     # **** process the car messages ****
 
     # *** compute control surfaces ***
-    BRAKE_MAX = 1024//2 #1024//4
+    BRAKE_MAX = 1024//2
     if CS.CP.carFingerprint in (CAR.ACURA_ILX):
       STEER_MAX = 0xF00
     elif CS.CP.carFingerprint in (CAR.CRV, CAR.ACURA_RDX):

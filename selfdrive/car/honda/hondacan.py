@@ -69,17 +69,19 @@ def create_acc_commands(packer, enabled, accel, fingerprint, idx):
   # 0  = gas
   # 17 = no gas
   # 31 = ?!?!
-  state_flag = 0 if enabled and accel > 0 else 17
+  state_flag = 0 if enabled and int(accel) > 0 else 17
   # 0 to +2000? = range
   # 720 = no gas
   # (scale from a max of 800 to 2000)
-  gas_command = int(accel) if enabled and accel > 0 else 720
+  gas_command = int(accel) if enabled and int(accel) > 0 else 720
   # 1 = brake
   # 0 = no brake
-  braking_flag = 1 if enabled and accel < 0 else 0
+  braking_flag = 1 if enabled and int(accel) < 0 else 0
   # -1599 to +800? = range
   # 0 = no accel
-  gas_brake = int(accel) if enabled else 0
+  gas_brake = int(accel) if enabled and int(accel) < 0 else 0
+  if (gas_brake > 0):
+    gas_brake = int(accel) * -1 if enabled else 0
 
   acc_control_values = {
     "GAS_COMMAND": gas_command,
@@ -103,7 +105,7 @@ def create_acc_commands(packer, enabled, accel, fingerprint, idx):
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", 0, acc_control_on_values, idx))
   
   #Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
-  if fingerprint == CAR.CIVIC_BOSCH:
+  if fingerprint in (CAR.CIVIC_BOSCH, CAR.INSIGHT):
     blank_values = {}
     commands.append(packer.make_can_msg("BLANK_1FA", 0, blank_values, idx))
 

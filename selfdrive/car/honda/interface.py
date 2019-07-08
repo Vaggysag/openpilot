@@ -101,7 +101,7 @@ class CarInterface(object):
     if CarController is not None:
       self.CC = CarController(self.cp.dbc_name)
 
-    if self.CS.CP.carFingerprint == CAR.ACURA_ILX:
+    if self.CS.CP.carFingerprint in (CAR.ACURA_ILX):
       self.compute_gb = get_compute_gb_acura()
     else:
       self.compute_gb = compute_gb_honda
@@ -234,11 +234,11 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 15  # 12.58 is spec end-to-end
       tire_stiffness_factor = 0.82
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.5], [0.20]]
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
+      ret.longitudinalTuning.kpV = [4.0, 2.85, 1.5]
+      ret.longitudinalTuning.kiBP = [0., 5., 35.]
+      ret.longitudinalTuning.kiV = [0.56, 0.54, 0.32]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
@@ -398,8 +398,8 @@ class CarInterface(object):
     ret.gasMaxBP = [0.]  # m/s
     ret.gasMaxV = [0.3] #if ret.enableGasInterceptor else [0.] # max gas allowed
 
-    ret.brakeMaxBP = [0., 20.]  # m/s
-    ret.brakeMaxV = [1., 0.8]   # max brake allowed
+    ret.brakeMaxBP = [0., 5., 10., 20.]  # m/s
+    ret.brakeMaxV = [1., 0.9, 0.8, 0.6]   # max brake allowed
 
     ret.longitudinalTuning.deadzoneBP = [0.]
     ret.longitudinalTuning.deadzoneV = [0.]

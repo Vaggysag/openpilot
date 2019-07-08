@@ -120,9 +120,9 @@ BO_ 464 WHEEL_SPEEDS: 8 VSA
 BO_ 479 ACC_CONTROL: 8 EON
  SG_ SET_TO_1 : 20|5@0+ (1,0) [0|1] "" PCM
  SG_ CONTROL_ON : 23|3@0+ (1,0) [0|5] "" XXX
- SG_ STATE_FLAG : 7|5@0+ (1,0) [0|1] "" XXX
- SG_ GAS_COMMAND : 2|11@0+ (0.048828125,0) [0|1] "" PCM
- SG_ GAS_BRAKE : 31|13@0- (1,0) [0|1] "" XXX
+ SG_ STATE_FLAG : 7|5@0+ (1,0) [0|0] "" XXX
+ SG_ GAS_COMMAND : 2|11@0+ (1,0) [0|0] "" PCM
+ SG_ GAS_BRAKE : 31|13@0- (1,0) [0|0] "" XXX
  SG_ BRAKING_1 : 62|1@0+ (1,0) [0|1] "" XXX
  SG_ BRAKING_2 : 34|1@0+ (1,0) [0|1] "" XXX
  SG_ ZEROS_BOH : 33|18@0+ (1,0) [100|100] "" XXX
@@ -137,6 +137,10 @@ BO_ 495 ACC_CONTROL_ON: 8 XXX
  SG_ SET_TO_FF : 15|8@0+ (1,0) [0|255] "" XXX
  SG_ SET_TO_3 : 6|7@0+ (1,0) [0|4095] "" XXX
  SG_ CONTROL_ON : 7|1@0+ (1,0) [0|1] "" XXX
+ SG_ CHECKSUM : 59|4@0+ (1,0) [0|15] "" XXX
+ SG_ COUNTER : 61|2@0+ (1,0) [0|3] "" XXX
+
+BO_ 506 BLANK_1FA: 8 XXX
  SG_ CHECKSUM : 59|4@0+ (1,0) [0|15] "" XXX
  SG_ COUNTER : 61|2@0+ (1,0) [0|3] "" XXX
 

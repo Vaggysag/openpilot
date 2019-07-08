@@ -53,7 +53,7 @@ def radard_thread(gctx=None):
   cloudlog.info("radard is waiting for CarParams")
   CP = car.CarParams.from_bytes(Params().get("CarParams", block=True))
   use_tesla_radar = CarSettings().get_value("useTeslaRadar")
-  mocked = (CP.carName == "mock") or ((CP.carName == "tesla") and not use_tesla_radar)
+  mocked = (CP.carName == "mock") or (CP.carName == "honda") or ((CP.carName == "tesla") and not use_tesla_radar)
   VM = VehicleModel(CP)
   cloudlog.info("radard got CarParams")
   
