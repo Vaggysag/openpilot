@@ -180,8 +180,8 @@ class LongitudinalMpc(object):
       return TR
     else:
       if self.last_cost != 0.05:
-        self.libmpc.change_tr(MPC_COST_LONG.TTC, 0.05, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-        self.last_cost = 0.05
+        self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.05, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.last_cost = 1.05
       return 1.1  # 30m at 40km/hr
 
   def calc_rate(self, seconds=1.0, new_frame=False):  # return current rate of long_mpc in fps/hertz
