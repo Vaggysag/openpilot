@@ -124,7 +124,7 @@ class LongitudinalMpc(object):
       TR = 1.1
     else:  # this allows us to get slightly closer to the lead car when stopping, while being able to have smooth stop and go
       x = [4.4704, 6.7056]  # smoothly ramp TR between 10 and 15 mph from 1.8s to defined TR above at 15mph
-      y = [1.1, interp(x[1], x_vel, y_mod)]
+      y = [1.8, interp(x[1], x_vel, y_mod)]
       TR = interp(self.v_ego, x, y)
 
     if self.v_lead is not None:  # since the new mpc now handles braking nicely, simplify mods
@@ -160,7 +160,7 @@ class LongitudinalMpc(object):
     read_distance_lines = self.car_state.readdistancelines
 
     if self.v_ego < 2.0 and read_distance_lines != 2:
-      return 1.1
+      return 1.8
     elif (self.car_state.leftBlinker or self.car_state.rightBlinker) and self.v_ego > 8.9408:  # don't get super close when signaling in a turn lane
       if self.last_cost != 1.0:
         self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
@@ -175,8 +175,8 @@ class LongitudinalMpc(object):
       self.save_car_data()
       TR = 1.1
       cost = self.get_cost(TR)
-      self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-      self.last_cost = 1.0
+      self.libmpc.change_tr(MPC_COST_LONG.TTC, cost, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+      self.last_cost = cost
       return TR
     else:
       if self.last_cost != 0.05:
