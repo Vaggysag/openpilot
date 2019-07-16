@@ -121,7 +121,7 @@ class LongitudinalMpc(object):
     y_mod = [1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1]
 
     if self.v_ego > 3.57632:  # 8 mph
-      TR = 1.1
+      TR = interp(self.v_ego, x_vel, y_mod)
     else:  # this allows us to get slightly closer to the lead car when stopping, while being able to have smooth stop and go
       x = [4.4704, 6.7056]  # smoothly ramp TR between 10 and 15 mph from 1.8s to defined TR above at 15mph
       y = [1.8, interp(x[1], x_vel, y_mod)]
@@ -173,7 +173,7 @@ class LongitudinalMpc(object):
       return 0.9  # 10m at 40km/hr
     elif read_distance_lines == 2:
       self.save_car_data()
-      TR = 1.1
+      TR = self.smooth_follow()
       cost = self.get_cost(TR)
       self.libmpc.change_tr(MPC_COST_LONG.TTC, cost, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
       self.last_cost = cost
