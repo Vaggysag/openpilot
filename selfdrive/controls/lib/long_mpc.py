@@ -171,7 +171,7 @@ class LongitudinalMpc(object):
         self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
         self.last_cost = 1.0
       return 0.9  # 10m at 40km/hr
-    elif read_distance_lines == 2:
+    elif read_distance_lines == 3:
       self.save_car_data()
       TR = self.smooth_follow()
       cost = self.get_cost(TR)
