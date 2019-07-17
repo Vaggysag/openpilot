@@ -118,7 +118,7 @@ class LongitudinalMpc(object):
 
   def smooth_follow(self):  # in m/s
     x_vel = [0.0, 5.222, 11.164, 14.937, 20.973, 33.975, 42.469]
-    y_mod = [1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1]
+    y_mod = [1.6, 1.55, 1.3, 1.12, 1.1, 1.1, 1.1]
 
     if self.v_ego > 3.57632:  # 8 mph
       TR = interp(self.v_ego, x_vel, y_mod)
@@ -129,7 +129,7 @@ class LongitudinalMpc(object):
 
     if self.v_lead is not None:  # since the new mpc now handles braking nicely, simplify mods
       x = [0, 0.61, 1.26, 2.1, 2.68]  # relative velocity values
-      y = [0, -0.017, -0.053, -0.154, -0.272]  # modification values
+      y = [0, -0.053, -0.154, -0.250, -0.369]  # modification values
       TR_mod = interp(self.v_lead + self.v_ego, x, y)  # quicker acceleration/don't brake when lead is overtaking
 
       '''x = [-1.49, -1.1, -0.67, 0.0, 0.67, 1.1, 1.49]
@@ -145,7 +145,7 @@ class LongitudinalMpc(object):
 
   def get_cost(self, TR):
     x = [.9, 1.8, 2.7, 3.6]
-    y = [2.0, 1.1, 1.05, 1.025]
+    y = [2.5, 2.0, 1.8, 1.55]
     if self.x_lead is not None and self.v_ego is not None and self.v_ego != 0:
       real_TR = self.x_lead / float(self.v_ego)  # switched to cost generation using actual distance from lead car; should be safer
       if abs(real_TR - TR) >= .25:  # use real TR if diff is greater than x safety threshold
