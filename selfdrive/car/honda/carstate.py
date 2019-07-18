@@ -345,8 +345,8 @@ class CarState(object):
     # TODO: discover the CAN msg that has the imperial unit bit for all other cars
     self.is_metric = not cp.vl["HUD_SETTING"]['IMPERIAL_UNIT'] if self.CP.carFingerprint in (CAR.CIVIC) else False
     # 3 for imperial, 2 for metric
-    if self.CP.carFingerprint in (CAR.CIVIC_BOSCH):
-      self.is_metric = 3
+    #if self.CP.carFingerprint in (CAR.CIVIC_BOSCH):
+    #  self.is_metric = 3
 
 # carstate standalone tester
 if __name__ == '__main__':
