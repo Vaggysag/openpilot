@@ -128,7 +128,7 @@ class CarController():
     elif CS.CP.carFingerprint in (CAR.ODYSSEY_CHN):
       STEER_MAX = 0x7FFF
     else:
-      STEER_MAX = 0x1000
+      STEER_MAX = 0xA00
 
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_gas = clip(actuators.gas, 0., 1.)
