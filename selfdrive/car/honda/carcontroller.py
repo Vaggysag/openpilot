@@ -2,7 +2,7 @@ from collections import namedtuple
 from cereal import car
 from common.realtime import DT_CTRL
 from selfdrive.controls.lib.drive_helpers import rate_limit
-from common.numpy_fast import clip
+from common.numpy_fast import clip, interp
 from selfdrive.car import create_gas_command
 from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import CruiseButtons, CAR, VISUAL_HUD
@@ -135,20 +135,14 @@ class CarController():
     elif CS.CP.carFingerprint in (CAR.ODYSSEY_CHN):
       STEER_MAX = 0x7FFF
     elif CS.CP.carFingerprint in (CAR.CIVIC) and self.eps_modified:
-      STEER_MAX = 0x1400
+      STEER_MAX = 0xF00
     else:
-      STEER_MAX = 0x1000
+      STEER_MAX = 0xF00
 
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_gas = clip(actuators.gas, 0., 1.)
     apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
-
-    if CS.CP.carFingerprint in (CAR.CIVIC) and self.eps_modified:
-      if apply_steer > 0xA00:
-        apply_steer = (apply_steer - 0xA00) / 2 + 0xA00
-      elif apply_steer < -0xA00:
-        apply_steer = (apply_steer + 0xA00) / 2 - 0xA00
 
     lkas_active = enabled and not CS.steer_not_allowed
 
