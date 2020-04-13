@@ -70,6 +70,9 @@ def create_acc_commands(packer, enabled, accel, gas, idx, stopping, starting, ca
   }
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", bus, acc_control_on_values, idx))
 
+  blank_values = {}
+  commands.append(packer.make_can_msg("BLANK_1FA", bus, blank_values, idx))
+
   return commands
 
 def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, idx, has_relay, openpilot_longitudinal_control):
