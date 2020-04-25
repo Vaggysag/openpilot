@@ -69,6 +69,7 @@ const int box_y = bdr_s;
 const int box_w = vwp_w-sbr_w-(bdr_s*2);
 const int box_h = vwp_h-(bdr_s*2);
 const int viz_w = vwp_w-(bdr_s*2);
+const int ff_xoffset = 32;
 const int header_h = 420;
 const int footer_h = 280;
 const int footer_y = vwp_h-bdr_s-footer_h;
@@ -139,6 +140,10 @@ typedef struct UIScene {
 
   int lead_status2;
   float lead_d_rel2, lead_y_rel2, lead_v_rel2;
+
+  float face_prob;
+  bool is_rhd;
+  float face_x, face_y;
 
   int front_box_x, front_box_y, front_box_width, front_box_height;
 
@@ -216,6 +221,8 @@ typedef struct UIState {
   SubSocket *thermal_sock;
   SubSocket *health_sock;
   SubSocket *ubloxgnss_sock;
+  SubSocket *driverstate_sock;
+  SubSocket *dmonitoring_sock;
   PubSocket *offroad_sock;
   Poller * poller;
   Poller * ublox_poller;
@@ -264,6 +271,7 @@ typedef struct UIState {
   int limit_set_speed_timeout;
   int hardware_timeout;
   int last_athena_ping_timeout;
+  int offroad_layout_timeout;
 
   bool controls_seen;
 
@@ -280,6 +288,7 @@ typedef struct UIState {
   float alert_blinking_alpha;
   bool alert_blinked;
   bool started;
+  bool thermal_started, preview_started;
   bool vision_seen;
 
   float light_sensor;
@@ -303,6 +312,7 @@ void ui_draw_vision_alert(UIState *s, int va_size, int va_color,
                           const char* va_text1, const char* va_text2);
 void ui_draw(UIState *s);
 void ui_draw_sidebar(UIState *s);
+void ui_draw_image(NVGcontext *vg, float x, float y, float w, float h, int image, float alpha);
 void ui_nvg_init(UIState *s);
 
 #endif
