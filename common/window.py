@@ -1,6 +1,5 @@
 import sys
 import pygame
-from pygame.locals import *
 
 class Window():
   def __init__(self, w, h, caption="window", double=False):
@@ -38,3 +37,13 @@ class Window():
       if event.type == pygame.MOUSEBUTTONDOWN:
         mx, my = pygame.mouse.get_pos()
         return mx, my
+
+if __name__ == "__main__":
+  import numpy as np
+  win = Window(200, 200)
+  img = np.zeros((200,200,3), np.uint8)
+  while 1:
+    print("draw")
+    img += 1
+    win.draw(img)
+

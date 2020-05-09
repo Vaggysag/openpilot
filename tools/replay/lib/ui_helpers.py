@@ -1,4 +1,3 @@
-import platform
 from collections import namedtuple
 
 import matplotlib
@@ -107,10 +106,6 @@ def draw_lead_on(img, closest_x_m, closest_y_m, calibration, color, sz=10, img_o
     img[v - 5 - sz:v - 5 + sz, u] = color
     img[v - 5, u - sz:u + sz] = color
   return u, v
-
-
-if platform.system() != 'Darwin':
-  matplotlib.use('QT4Agg')
 
 
 def init_plots(arr, name_to_arr_idx, plot_xlims, plot_ylims, plot_names, plot_colors, plot_styles, bigplots=False):
