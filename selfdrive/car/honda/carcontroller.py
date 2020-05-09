@@ -143,10 +143,10 @@ class CarController():
       stopping = 0
       starting = 0
       accel = actuators.gas - actuators.brake
-      if accel < 0 and CS.out.vEgo < 0.3:
+      if accel < 0 and CS.out.vEgo < 0.0:
         # prevent rolling backwards
-        stopping = 1
-        accel = -1.0
+        stopping = 0
+        # accel = -1.0
       elif accel > 0 and CS.out.vEgo < 0.3:
         starting = 1
       apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
