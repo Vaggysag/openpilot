@@ -10,8 +10,8 @@ from opendbc.can.packer import CANPacker
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
-BOSCH_ACCEL_LOOKUP_BP = [-1., 0.6]
-BOSCH_ACCEL_LOOKUP_V = [-3.5, 2.]
+BOSCH_ACCEL_LOOKUP_BP = [-1., 0., 0.6]
+BOSCH_ACCEL_LOOKUP_V = [-3.5, 0., 2.]
 BOSCH_GAS_LOOKUP_BP = [0., 0.6]
 BOSCH_GAS_LOOKUP_V = [0, 2000]
 
@@ -143,7 +143,7 @@ class CarController():
       stopping = 0
       starting = 0
       accel = actuators.gas - actuators.brake
-      if accel < 0 and CS.out.vEgo < 0.0:
+      if accel < 0 and CS.out.vEgo < 0.3:
         # prevent rolling backwards
         stopping = 0
         # accel = -1.0

@@ -17,7 +17,7 @@ A_ACC_MAX = max(_A_CRUISE_MAX_V_FOLLOWING)
 ButtonType = car.CarState.ButtonEvent.Type
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 3.5
+  return float(accel) / 4.2
 
 def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
@@ -194,7 +194,7 @@ class CarInterface(CarInterfaceBase):
       tire_stiffness_factor = 1.
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.12]]
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.6, 1.2, 0.69]
+      ret.longitudinalTuning.kpV = [1.9, 1.4, 1.0]
       ret.longitudinalTuning.kiBP = [0., 35.]
       ret.longitudinalTuning.kiV = [0.18, 0.12]
 
