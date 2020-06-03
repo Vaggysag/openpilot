@@ -1,5 +1,5 @@
 from selfdrive.config import Conversions as CV
-from selfdrive.car.honda.values import HONDA_BOSCH
+from selfdrive.car.honda.values import HONDA_BOSCH, CAR
 
 
 def get_pt_bus(car_fingerprint, has_relay):
@@ -141,6 +141,9 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
       'SET_TO_1' : 0x01,
     }
     commands.append(packer.make_can_msg('RADAR_HUD', bus_pt, radar_hud_values, idx))
+    
+    if car_fingerprint in CAR.CIVIC_BOSCH:
+      commands.append(packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus_pt, {}, idx))
 
   return commands
 
