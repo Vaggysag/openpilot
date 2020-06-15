@@ -130,6 +130,7 @@ struct FrameData {
   focusVal @16 :List(Int16);
   focusConf @17 :List(UInt8);
   sharpnessScore @18 :List(UInt16);
+  recoverState @19 :Int32;
 
   frameType @7 :FrameType;
   timestampSof @8 :UInt64;
@@ -627,6 +628,7 @@ struct ModelData {
     std @2 :Float32;
     stds @3 :List(Float32);
     poly @4 :List(Float32);
+    validLen @5 :Float32;
   }
 
   struct LeadData {
