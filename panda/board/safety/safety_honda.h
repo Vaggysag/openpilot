@@ -6,10 +6,11 @@
 //      accel rising edge
 //      brake rising edge
 //      brake > 0mph
+#include "safety_teslaradar.h"
 const CanMsg HONDA_N_TX_MSGS[] = {{0xE4, 0, 5}, {0x194, 0, 4}, {0x1FA, 0, 8}, {0x200, 0, 6}, {0x30C, 0, 8}, {0x33D, 0, 5}};
-const CanMsg HONDA_BG_TX_MSGS[] = {{0xE4, 2, 5}, {0xE5, 2, 8}, {0x296, 0, 4}, {0x33D, 2, 5}};  // Bosch Giraffe
+const CanMsg HONDA_BG_TX_MSGS[] = {{0xE4, 2, 5}, {0xE5, 2, 8}, {0x296, 0, 4}, {0x560, 0, 8}, {0x33D, 2, 5}};  // Bosch Giraffe
 const CanMsg HONDA_BH_TX_MSGS[] = {{0xE4, 0, 5}, {0xE5, 0, 8}, {0x296, 1, 4}, {0x33D, 0, 5}};  // Bosch Harness
-const CanMsg HONDA_BG_LONG_TX_MSGS[] = {{0xE4, 0, 5}, {0x1DF, 0, 8}, {0x1EF, 0, 8}, {0x1FA, 0, 8}, {0x30C, 0, 8}, {0x33D, 0, 5}, {0x39F, 0, 8}, {0x18DAB0F1, 0, 8}};  // Bosch Giraffe w/ gas and brakes
+const CanMsg HONDA_BG_LONG_TX_MSGS[] = {{0xE4, 0, 5}, {0x1DF, 0, 8}, {0x1EF, 0, 8}, {0x1FA, 0, 8}, {0x560, 0, 8}, {0x30C, 0, 8}, {0x33D, 0, 5}, {0x39F, 0, 8}, {0x18DAB0F1, 0, 8}};  // Bosch Giraffe w/ gas and brakes
 const CanMsg HONDA_BH_LONG_TX_MSGS[] = {{0xE4, 1, 5}, {0x1DF, 1, 8}, {0x1EF, 1, 8}, {0x1FA, 1, 8}, {0x30C, 1, 8}, {0x33D, 1, 5}, {0x39F, 1, 8}, {0x18DAB0F1, 1, 8}};  // Bosch Harness w/ gas and brakes
 
 // Roughly calculated using the offsets in openpilot +5%:
@@ -29,6 +30,7 @@ AddrCheckStruct honda_rx_checks[] = {
   {.msg = {{0x1A6, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 40000U},
            {0x296, 0, 4, .check_checksum = true, .max_counter = 3U, .expected_timestep = 40000U}}},
   {.msg = {{0x158, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}}},
+  {.msg = {{0x309, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}}},
   {.msg = {{0x17C, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}}},
 };
 const int HONDA_RX_CHECKS_LEN = sizeof(honda_rx_checks) / sizeof(honda_rx_checks[0]);
@@ -96,7 +98,16 @@ static int honda_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     int len = GET_LEN(to_push);
     int bus = GET_BUS(to_push);
 
-    // sample speed
+    //do the tesla radar call
+    teslaradar_rx_hook(to_push);
+
+    // speed for radar
+    if (addr == 0x309) {
+      // first 2 bytes
+      actual_speed_kph = GET_BYTE(to_push, 0) | GET_BYTE(to_push, 1);
+    }
+
+	// sample speed
     if (addr == 0x158) {
       // first 2 bytes
       vehicle_moving = GET_BYTE(to_push, 0) | GET_BYTE(to_push, 1);
@@ -215,6 +226,53 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 
   if (relay_malfunction) {
     tx = 0;
+  }
+  
+  //check if this is a teslaradar vin message
+  //capture message for radarVIN and settings
+  if (addr == 0x560) {
+    int id = (GET_BYTE(to_send, 0));
+    int radarVin_b1 = (GET_BYTE(to_send, 1) >> 8) & 0xFF;
+    int radarVin_b2 = (GET_BYTE(to_send, 2) >> 16) & 0xFF;
+    int radarVin_b3 = (GET_BYTE(to_send, 3) >> 24) & 0xFF;
+    int radarVin_b4 = (GET_BYTE(to_send, 4)) & 0xFF;
+    int radarVin_b5 = (GET_BYTE(to_send, 5) >> 8) & 0xFF;
+    int radarVin_b6 = (GET_BYTE(to_send, 6) >> 16) & 0xFF;
+    int radarVin_b7 = (GET_BYTE(to_send, 7) >> 24) & 0xFF;
+    if (id == 0) {
+      tesla_radar_should_send = (radarVin_b2 & 0x01);
+      radarPosition = ((radarVin_b2 >> 1) & 0x03);
+      radarEpasType = ((radarVin_b2 >> 3) & 0x07);
+      tesla_radar_trigger_message_id = (radarVin_b3 << 8) + radarVin_b4;
+      tesla_radar_can = radarVin_b1;
+      radar_VIN[0] = radarVin_b5;
+      radar_VIN[1] = radarVin_b6;
+      radar_VIN[2] = radarVin_b7;
+      tesla_radar_vin_complete = tesla_radar_vin_complete | 1;
+    }
+    if (id == 1) {
+      radar_VIN[3] = radarVin_b1;
+      radar_VIN[4] = radarVin_b2;
+      radar_VIN[5] = radarVin_b3;
+      radar_VIN[6] = radarVin_b4;
+      radar_VIN[7] = radarVin_b5;
+      radar_VIN[8] = radarVin_b6;
+      radar_VIN[9] = radarVin_b7;
+      tesla_radar_vin_complete = tesla_radar_vin_complete | 2;
+    }
+    if (id == 2) {
+      radar_VIN[10] = radarVin_b1;
+      radar_VIN[11] = radarVin_b2;
+      radar_VIN[12] = radarVin_b3;
+      radar_VIN[13] = radarVin_b4;
+      radar_VIN[14] = radarVin_b5;
+      radar_VIN[15] = radarVin_b6;
+      radar_VIN[16] = radarVin_b7;
+      tesla_radar_vin_complete = tesla_radar_vin_complete | 4;
+    }
+    else {
+      return 0;
+    }
   }
 
   // disallow actuator commands if gas or brake (with vehicle moving) are pressed
@@ -377,6 +435,9 @@ static int honda_bosch_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       if (!is_lkas_msg) {
         bus_fwd = bus_rdr_car;
       }
+    }
+    if (bus_num == 2) {
+      return -1;
     }
   }
   return bus_fwd;
