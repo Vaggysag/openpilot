@@ -5,14 +5,14 @@ from common.realtime import set_realtime_priority
 from common.params import Params
 import cereal.messaging as messaging
 from selfdrive.controls.lib.events import Events
-from selfdrive.controls.lib.driver_monitor import DriverStatus, MAX_TERMINAL_ALERTS, MAX_TERMINAL_DURATION
+from selfdrive.monitoring.driver_monitor import DriverStatus, MAX_TERMINAL_ALERTS, MAX_TERMINAL_DURATION
 from selfdrive.locationd.calibration_helpers import Calibration
 
 def dmonitoringd_thread(sm=None, pm=None):
   gc.disable()
 
   # start the loop
-  set_realtime_priority(3)
+  set_realtime_priority(53)
 
   params = Params()
 
