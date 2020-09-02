@@ -1,5 +1,6 @@
-from cereal import log, car
+from functools import total_ordering
 
+from cereal import log, car
 from common.realtime import DT_CTRL
 from selfdrive.config import Conversions as CV
 from selfdrive.locationd.calibration_helpers import Filter
@@ -93,6 +94,7 @@ class Events:
       ret.append(event)
     return ret
 
+@total_ordering
 class Alert:
   def __init__(self,
                alert_text_1,
@@ -136,6 +138,9 @@ class Alert:
   def __gt__(self, alert2):
     return self.alert_priority > alert2.alert_priority
 
+  def __eq__(self, alert2):
+    return self.alert_priority == alert2.alert_priority
+
 class NoEntryAlert(Alert):
   def __init__(self, alert_text_2, audible_alert=AudibleAlert.chimeError,
                visual_alert=VisualAlert.none, duration_hud_alert=2.):
@@ -171,7 +176,7 @@ class EngagementAlert(Alert):
 
 def below_steer_speed_alert(CP, sm, metric):
   speed = int(round(CP.minSteerSpeed * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH)))
-  unit = "kph" if metric else "mph"
+  unit = "km/h" if metric else "mph"
   return Alert(
     "TAKE CONTROL",
     "Steer Unavailable Below %d %s" % (speed, unit),
@@ -180,7 +185,7 @@ def below_steer_speed_alert(CP, sm, metric):
 
 def calibration_incomplete_alert(CP, sm, metric):
   speed = int(Filter.MIN_SPEED * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH))
-  unit = "kph" if metric else "mph"
+  unit = "km/h" if metric else "mph"
   return Alert(
     "Calibration in Progress: %d%%" % sm['liveCalibration'].calPerc,
     "Drive Above %d %s" % (speed, unit),
@@ -203,8 +208,6 @@ def wrong_car_mode_alert(CP, sm, metric):
 
 EVENTS = {
   # ********** events with no alerts **********
-
-  EventName.modeldLagging: {},
 
   # ********** events only containing alerts displayed in all states **********
 
@@ -527,21 +530,12 @@ EVENTS = {
                               duration_hud_alert=0.),
   },
 
-  EventName.posenetInvalid: {
-    ET.WARNING: Alert(
-      "TAKE CONTROL",
-      "Vision Model Output Uncertain",
-      AlertStatus.userPrompt, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeWarning1, .4, 2., 3.),
-    ET.NO_ENTRY: NoEntryAlert("Vision Model Output Uncertain"),
-  },
-
   EventName.focusRecoverActive: {
     ET.WARNING: Alert(
       "TAKE CONTROL",
       "Attempting Refocus: Camera Focus Invalid",
       AlertStatus.userPrompt, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeWarning1, .4, 2., 3.),
+      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeWarning1, .4, 2., 3., creation_delay=3.1),
   },
 
   EventName.outOfSpace: {
@@ -649,6 +643,21 @@ EVENTS = {
   EventName.radarFault: {
     ET.SOFT_DISABLE: SoftDisableAlert("Radar Error: Restart the Car"),
     ET.NO_ENTRY : NoEntryAlert("Radar Error: Restart the Car"),
+  },
+
+  EventName.modeldLagging: {
+    ET.SOFT_DISABLE: SoftDisableAlert("Driving model lagging"),
+    ET.NO_ENTRY : NoEntryAlert("Driving model lagging"),
+  },
+
+  EventName.posenetInvalid: {
+    ET.SOFT_DISABLE: SoftDisableAlert("Vision Model Output Uncertain"),
+    ET.NO_ENTRY: NoEntryAlert("Vision Model Output Uncertain"),
+  },
+
+  EventName.deviceFalling: {
+    ET.SOFT_DISABLE: SoftDisableAlert("Device Fell Off Mount"),
+    ET.NO_ENTRY: NoEntryAlert("Device Fell Off Mount"),
   },
 
   EventName.lowMemory: {

@@ -96,6 +96,7 @@ static OMX_CALLBACKTYPE omx_callbacks = {
 #define PORT_INDEX_IN 0
 #define PORT_INDEX_OUT 1
 
+static const char* omx_color_fomat_name(uint32_t format) __attribute__((unused));
 static const char* omx_color_fomat_name(uint32_t format) {
   switch (format) {
   case OMX_COLOR_FormatUnused: return "OMX_COLOR_FormatUnused";
@@ -397,9 +398,9 @@ static void handle_out_buf(EncoderState *s, OMX_BUFFERHEADERTYPE *out_buf) {
   }
 
   if (s->stream_sock_raw) {
-    uint64_t current_time = nanos_since_boot();
-    uint64_t diff = current_time - out_buf->nTimeStamp*1000LL;
-    double msdiff = (double) diff / 1000000.0;
+    //uint64_t current_time = nanos_since_boot();
+    //uint64_t diff = current_time - out_buf->nTimeStamp*1000LL;
+    //double msdiff = (double) diff / 1000000.0;
     // printf("encoded latency to tsEof: %f\n", msdiff);
     zmq_send(s->stream_sock_raw, &out_buf->nTimeStamp, sizeof(out_buf->nTimeStamp), ZMQ_SNDMORE);
     zmq_send(s->stream_sock_raw, buf_data, out_buf->nFilledLen, 0);
@@ -473,17 +474,16 @@ int encoder_encode_frame(EncoderState *s,
 
   // this sometimes freezes... put it outside the encoder lock so we can still trigger rotates...
   // THIS IS A REALLY BAD IDEA, but apparently the race has to happen 30 times to trigger this
-  pthread_mutex_unlock(&s->lock);
+  //pthread_mutex_unlock(&s->lock);
   OMX_BUFFERHEADERTYPE* in_buf = queue_pop(&s->free_in);
-  pthread_mutex_lock(&s->lock);
+  //pthread_mutex_lock(&s->lock);
 
-  if (s->rotating) {
-    encoder_close(s);
-    encoder_open(s, s->next_path);
-    s->segment = s->next_segment;
-    s->rotating = false;
-  }
-
+  // if (s->rotating) {
+  //   encoder_close(s);
+  //   encoder_open(s, s->next_path);
+  //   s->segment = s->next_segment;
+  //   s->rotating = false;
+  // }
   int ret = s->counter;
 
   uint8_t *in_buf_ptr = in_buf->pBuffer;
