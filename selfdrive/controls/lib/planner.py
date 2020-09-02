@@ -15,7 +15,7 @@ from selfdrive.controls.lib.fcw import FCWChecker
 from selfdrive.controls.lib.long_mpc import LongitudinalMpc
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 
-use_e2e = 0
+use_e2e = 1
 
 if use_e2e == 1:
   from selfdrive.controls.lib.long_mpc_model import LongitudinalMpcModel
@@ -31,7 +31,7 @@ AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distract
 if use_e2e == 1:
   _A_CRUISE_MIN_V  = [-6., -6., -6., -6., -6.]
 else:
-  _A_CRUISE_MIN_V  = [-1.0, -.8, -.67, -.5, -.30]
+  _A_CRUISE_MIN_V  = [-6., -6., -6., -6., -6.]
 _A_CRUISE_MIN_BP = [   0., 5.,  10., 20.,  40.]
 
 # need fast accel at very low speed for stop and go
@@ -107,10 +107,10 @@ class Planner():
     if enabled:
       if use_e2e == 1:
         solutions = {'cruise': self.v_cruise}
-        if self.mpc1.prev_lead_status:
-          solutions['mpc1'] = self.mpc1.v_mpc
-        if self.mpc2.prev_lead_status:
-          solutions['mpc2'] = self.mpc2.v_mpc
+        #if self.mpc1.prev_lead_status:
+        #  solutions['mpc1'] = self.mpc1.v_mpc
+        #if self.mpc2.prev_lead_status:
+        #  solutions['mpc2'] = self.mpc2.v_mpc
         if self.mpc_model.valid:
           solutions['model'] = self.mpc_model.v_mpc
       else:
@@ -210,7 +210,7 @@ class Planner():
     self.mpc1.update(pm, sm['carState'], lead_1, v_cruise_setpoint)
     self.mpc2.update(pm, sm['carState'], lead_2, v_cruise_setpoint)
     if use_e2e == 1:
-      self.mpc_model.update(sm['carState'].vEgo, sm['carState'].vEgo,
+      self.mpc_model.update(sm['carState'].vEgo, sm['carState'].aEgo,
                             sm['model'].longitudinal.distances,
                             sm['model'].longitudinal.speeds,
                             sm['model'].longitudinal.accelerations)

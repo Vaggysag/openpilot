@@ -21,7 +21,7 @@ ALT_BRAKE_FLAG = 1
 BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 5.0
+  return float(accel) / 4.2
 
 def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
@@ -203,11 +203,11 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 12.5  # 10.93 is end-to-end spec
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2566, 8000], [0, 2566, 3840]]  # TODO: determine if there is a dead zone at the top end
       tire_stiffness_factor = 1.
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.06]]
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.9, 1.4, 1.0]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.17], [0.05]]
+      ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
+      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.6, 0.4]
+      ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
+      ret.longitudinalTuning.kiV = [0.18, 0.16, 0.14, 0.12]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
