@@ -1,5 +1,6 @@
 #!/bin/bash -e
 
+
 sudo apt-get update && sudo apt-get install -y \
     autoconf \
     build-essential \
@@ -32,7 +33,6 @@ sudo apt-get update && sudo apt-get install -y \
     libtool \
     libusb-1.0-0-dev \
     libzmq3-dev \
-    libczmq-dev \
     libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsmpeg-dev \
     libsdl1.2-dev  libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev libfreetype6-dev \
     libsystemd-dev \
@@ -41,8 +41,9 @@ sudo apt-get update && sudo apt-get install -y \
     ocl-icd-opencl-dev \
     opencl-headers \
     python-dev \
-    python-pip \
+    python3-pip \
     qt5-default \
+    qtmultimedia5-dev \
     screen \
     sudo \
     vim \
@@ -85,7 +86,7 @@ pyenv rehash
 # **** in python env ****
 
 # install pipenv
-pip install pipenv==2018.11.26
+pip install pipenv==2020.8.13
 
 # pipenv setup (in openpilot dir)
 pipenv install --dev --system --deploy

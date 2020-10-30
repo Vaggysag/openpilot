@@ -15,7 +15,7 @@ from selfdrive.controls.lib.fcw import FCWChecker
 from selfdrive.controls.lib.long_mpc import LongitudinalMpc
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 
-use_e2e = 1
+use_e2e = 0
 
 if use_e2e == 1:
   from selfdrive.controls.lib.long_mpc_model import LongitudinalMpcModel
@@ -23,7 +23,6 @@ if use_e2e == 1:
 MAX_SPEED = 255.0
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
-MAX_SPEED_ERROR = 2.0
 AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distracted
 
 # lookup tables VS speed to determine min and max accels in cruise
@@ -50,9 +49,6 @@ if use_e2e == 1:
 else:
   _A_TOTAL_MAX_V = [1.7, 3.2]
 _A_TOTAL_MAX_BP = [20., 40.]
-
-# 75th percentile
-SPEED_PERCENTILE_IDX = 7
 
 
 def calc_cruise_accel_limits(v_ego, following):
@@ -207,8 +203,8 @@ class Planner():
     if use_e2e == 1:
       self.mpc_model.set_cur_state(self.v_acc_start, self.a_acc_start)
 
-    self.mpc1.update(pm, sm['carState'], lead_1, v_cruise_setpoint)
-    self.mpc2.update(pm, sm['carState'], lead_2, v_cruise_setpoint)
+    self.mpc1.update(pm, sm['carState'], lead_1)
+    self.mpc2.update(pm, sm['carState'], lead_2)
     if use_e2e == 1:
       self.mpc_model.update(sm['carState'].vEgo, sm['carState'].aEgo,
                             sm['model'].longitudinal.distances,
