@@ -107,10 +107,10 @@ class Planner():
     if enabled:
       if use_e2e == 1:
         solutions = {'cruise': self.v_cruise}
-        #if self.mpc1.prev_lead_status:
-        #  solutions['mpc1'] = self.mpc1.v_mpc
-        #if self.mpc2.prev_lead_status:
-        #  solutions['mpc2'] = self.mpc2.v_mpc
+        if self.mpc1.prev_lead_status:
+          solutions['mpc1'] = self.mpc1.v_mpc
+        if self.mpc2.prev_lead_status:
+          solutions['mpc2'] = self.mpc2.v_mpc
         if self.mpc_model.valid:
           solutions['model'] = self.mpc_model.v_mpc
       else:

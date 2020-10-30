@@ -201,11 +201,11 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = CivicParams.WHEELBASE
       ret.centerToFront = CivicParams.CENTER_TO_FRONT
       ret.steerRatio = 12.5  # 10.93 is end-to-end spec
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2566, 8000], [0, 2566, 3840]]  # TODO: determine if there is a dead zone at the top end
+      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4608, 18070], [0, 2566, 3840]]  # BP is 0x1200 and 3840*(stock kp/mod kp)
       tire_stiffness_factor = 1.
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.17], [0.05]]
       ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.6, 0.4]
+      ret.longitudinalTuning.kpV = [1.0, 0.6, 0.5, 0.4]
       ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
       ret.longitudinalTuning.kiV = [0.18, 0.16, 0.14, 0.12]
 
