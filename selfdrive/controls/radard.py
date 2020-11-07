@@ -167,7 +167,6 @@ class RadarD():
     if enable_lead:
       radarState.leadOne = get_lead(self.v_ego, self.ready, clusters, sm['model'].lead, low_speed_override=True)
       radarState.leadTwo = get_lead(self.v_ego, self.ready, clusters, sm['model'].leadFuture, low_speed_override=False)
->>>>>>> c21ccccd613d624b647be447f2377d88d2b43ac0
     return dat
 
 
