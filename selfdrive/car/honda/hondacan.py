@@ -8,13 +8,13 @@ from selfdrive.car.honda.values import HONDA_BOSCH, CAR
 # 3 = F-CAN A - OBDII port
 
 def get_pt_bus(car_fingerprint):
-  return 1 if car_fingerprint in HONDA_BOSCH else 0
+  return 0 if car_fingerprint in HONDA_BOSCH else 0 # default is 1 but force 0 for grey panda
 
 
 def get_lkas_cmd_bus(car_fingerprint, openpilot_longitudinal_control=False):
   if openpilot_longitudinal_control:
     return get_pt_bus(car_fingerprint)
-  return 2 if car_fingerprint in HONDA_BOSCH else 0
+  return 2 if car_fingerprint in HONDA_BOSCH else 2 # default is 0 but force 2 for grey panda
 
 
 def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_cmd, fcw, idx, car_fingerprint, stock_brake):

@@ -134,10 +134,10 @@ class CarInterface(CarInterfaceBase):
     ret.safetyParam = 0
 
     if candidate in HONDA_BOSCH:
-      ret.safetyModel = car.CarParams.SafetyModel.hondaBoschHarness
+      ret.safetyModel = car.CarParams.SafetyModel.hondaBoschGiraffe
       ret.enableCamera = True
       ret.radarOffCan = True
-      ret.openpilotLongitudinalControl = params.get("VisionRadarToggle", encoding='utf8') == "1"
+      ret.openpilotLongitudinalControl = True # force true
       ret.enableCruise = not ret.openpilotLongitudinalControl
       ret.communityFeature = ret.openpilotLongitudinalControl
       if ret.openpilotLongitudinalControl:

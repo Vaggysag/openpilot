@@ -167,7 +167,7 @@ class CarController():
       # TODO: radar disable hacked together to see if it works
       if (frame % 10) == 0:
         # tester present - w/ no response (keeps radar disabled)
-        can_sends.append([0x18DAB0F1, 0, b"\x02\x3E\x80\x00\x00\x00\x00\x00", 1 if CS.CP.isPandaBlack else 0])
+        can_sends.append([0x18DAB0F1, 0, b"\x02\x3E\x80\x00\x00\x00\x00\x00", 0]) # force 0 for grey panda
 
     # Send steering command.
     idx = frame % 4
@@ -195,7 +195,7 @@ class CarController():
         idx = frame // 2
         ts = frame * DT_CTRL
         if CS.CP.carFingerprint in HONDA_BOSCH:
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint, CS.CP.isPandaBlack))
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint))
         else:
           pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
           can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
