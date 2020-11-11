@@ -9,6 +9,7 @@
 #include "common/params.h"
 #include "driving.h"
 
+#define MIN_VALID_LEN 10.0
 #define TRAJECTORY_SIZE 33
 #define TRAJECTORY_TIME 10.0
 #define TRAJECTORY_DISTANCE 192.0
@@ -325,7 +326,7 @@ void model_publish_v2(PubMaster &pm, uint32_t vipc_frame_id, uint32_t frame_id,
     }
   }
   float valid_len = net_outputs.plan[plan_mhp_max_idx*(PLAN_MHP_GROUP_SIZE) + 30*32];
-  valid_len = fmin(MODEL_PATH_DISTANCE, fmax(5, valid_len));
+  valid_len = fmin(MODEL_PATH_DISTANCE, fmax(MIN_VALID_LEN, valid_len));
   int valid_len_idx = 0;
   for (int i=1; i<TRAJECTORY_SIZE; i++) {
     if (valid_len >= X_IDXS[valid_len_idx]){
@@ -351,22 +352,29 @@ void model_publish_v2(PubMaster &pm, uint32_t vipc_frame_id, uint32_t frame_id,
   // lane lines
   auto lane_lines = framed.initLaneLines(4);
   float lane_line_probs_arr[4];
+  float lane_line_stds_arr[4];
   for (int i = 0; i < 4; i++) {
     fill_xyzt(lane_lines[i], &net_outputs.lane_lines[i*TRAJECTORY_SIZE*2], 2, -1, plan_t_arr);
     lane_line_probs_arr[i] = sigmoid(net_outputs.lane_lines_prob[i]);
+    lane_line_stds_arr[i] = exp(net_outputs.lane_lines[2*TRAJECTORY_SIZE*(4 + i)]);
   }
   kj::ArrayPtr<const float> lane_line_probs(lane_line_probs_arr, 4);
   framed.setLaneLineProbs(lane_line_probs);
+  framed.setLaneLineStds(lane_line_stds_arr);
 
   // road edges
   auto road_edges = framed.initRoadEdges(2);
-  fill_xyzt(road_edges[0], &net_outputs.road_edges[0*TRAJECTORY_SIZE*2], 2, -1, plan_t_arr);
-  fill_xyzt(road_edges[1], &net_outputs.road_edges[1*TRAJECTORY_SIZE*2], 2, -1, plan_t_arr);
+  float road_edge_stds_arr[2];
+  for (int i = 0; i < 2; i++) {
+    fill_xyzt(road_edges[i], &net_outputs.road_edges[i*TRAJECTORY_SIZE*2], 2, -1, plan_t_arr);
+    road_edge_stds_arr[i] = exp(net_outputs.road_edges[2*TRAJECTORY_SIZE*(2 + i)]);
+  }
+  framed.setRoadEdgeStds(road_edge_stds_arr);
 
   // meta
   auto meta = framed.initMeta();
   fill_meta_v2(meta, net_outputs.meta);
-  
+
   // leads
   auto leads = framed.initLeads(LEAD_MHP_SELECTION);
   int mdn_max_idx = 0;
@@ -406,7 +414,7 @@ void model_publish(PubMaster &pm, uint32_t vipc_frame_id, uint32_t frame_id,
   // x pos at 10s is a good valid_len
   float valid_len = net_outputs.plan[plan_mhp_max_idx*(PLAN_MHP_GROUP_SIZE) + 30*32];
   // clamp to 5 and MODEL_PATH_DISTANCE
-  valid_len = fmin(MODEL_PATH_DISTANCE, fmax(5, valid_len));
+  valid_len = fmin(MODEL_PATH_DISTANCE, fmax(MIN_VALID_LEN, valid_len));
   int valid_len_idx = 0;
   for (int i=1; i<TRAJECTORY_SIZE; i++) {
     if (valid_len >= X_IDXS[valid_len_idx]){
@@ -416,7 +424,7 @@ void model_publish(PubMaster &pm, uint32_t vipc_frame_id, uint32_t frame_id,
 
   auto lpath = framed.initPath();
   fill_path(lpath, &net_outputs.plan[plan_mhp_max_idx*(PLAN_MHP_GROUP_SIZE)], valid_len, valid_len_idx);
-  
+
   auto left_lane = framed.initLeftLane();
   int ll_idx = 1;
   fill_lane_line(left_lane, net_outputs.lane_lines, ll_idx, valid_len, valid_len_idx,
