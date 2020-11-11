@@ -15,7 +15,7 @@ from selfdrive.controls.lib.fcw import FCWChecker
 from selfdrive.controls.lib.long_mpc import LongitudinalMpc
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 
-use_e2e = 1
+use_e2e = 0
 
 if use_e2e == 1:
   from selfdrive.controls.lib.long_mpc_model import LongitudinalMpcModel
