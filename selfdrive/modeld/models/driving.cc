@@ -374,7 +374,7 @@ void model_publish_v2(PubMaster &pm, uint32_t vipc_frame_id, uint32_t frame_id,
   // meta
   auto meta = framed.initMeta();
   fill_meta_v2(meta, net_outputs.meta);
-
+  
   // leads
   auto leads = framed.initLeads(LEAD_MHP_SELECTION);
   int mdn_max_idx = 0;
@@ -424,7 +424,7 @@ void model_publish(PubMaster &pm, uint32_t vipc_frame_id, uint32_t frame_id,
 
   auto lpath = framed.initPath();
   fill_path(lpath, &net_outputs.plan[plan_mhp_max_idx*(PLAN_MHP_GROUP_SIZE)], valid_len, valid_len_idx);
-
+  
   auto left_lane = framed.initLeftLane();
   int ll_idx = 1;
   fill_lane_line(left_lane, net_outputs.lane_lines, ll_idx, valid_len, valid_len_idx,
