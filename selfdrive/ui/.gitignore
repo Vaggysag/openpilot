@@ -1,5 +1,5 @@
 moc_*
 *.moc
 
-qt/text
-qt/spinner
+qt/setup/setup
+qt/setup/installer
