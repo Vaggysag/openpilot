@@ -234,7 +234,7 @@ static void ui_draw_vision_lane_lines(UIState *s) {
     NVGcolor color = nvgRGBAf(1.0, 1.0, 1.0, scene->lane_line_probs[ll_idx]);
     ui_draw_line(s, (pvd_ll + ll_idx)->v, (pvd_ll + ll_idx)->cnt, &color, nullptr);
   }
-
+  
   // paint road edges
   line_vertices_data *pvd_re = &s->road_edge_vertices[0];
   for (int re_idx = 0; re_idx < 2; re_idx++) {
@@ -244,7 +244,7 @@ static void ui_draw_vision_lane_lines(UIState *s) {
     NVGcolor color = nvgRGBAf(1.0, 0.0, 0.0, std::clamp<float>(1.0-scene->road_edge_stds[re_idx], 0.0, 1.0));
     ui_draw_line(s, (pvd_re + re_idx)->v, (pvd_re + re_idx)->cnt, &color, nullptr);
   }
-
+  
   // paint path
   if(s->sm->updated("modelV2")) {
     update_track_data(s, scene->model.getPosition(), &s->track_vertices);
@@ -422,7 +422,7 @@ static void ui_draw_driver_view(UIState *s) {
   ui_draw_circle_image(s->vg, x, y, face_size, s->img_face, scene->dmonitoring_state.getFaceDetected());
 }
 
-static void ui_draw_vision_]header(UIState *s) {
+static void ui_draw_vision_header(UIState *s) {
   const Rect &viz_rect = s->scene.viz_rect;
   NVGpaint gradient = nvgLinearGradient(s->vg, viz_rect.x,
                         viz_rect.y+(header_h-(header_h/2.5)),
