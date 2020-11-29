@@ -3,8 +3,6 @@
 #include <sstream>
 #include <cassert>
 
-#include "settings.hpp"
-
 #include <QString>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -12,12 +10,20 @@
 #include <QLabel>
 #include <QPixmap>
 
+#include "wifi.hpp"
+#include "settings.hpp"
+#include "input_field.hpp"
+#include "toggle.hpp"
+
 #include "common/params.h"
+#include "common/utilpp.h"
+
+const int SIDEBAR_WIDTH = 400;
 
 ParamsToggle::ParamsToggle(QString param, QString title, QString description, QString icon_path, QWidget *parent): QFrame(parent) , param(param) {
   QHBoxLayout *hlayout = new QHBoxLayout;
-  QVBoxLayout *vlayout = new QVBoxLayout;
-
+  
+  //Parameter image
   hlayout->addSpacing(25);
   if (icon_path.length()){
     QPixmap pix(icon_path);
@@ -29,21 +35,29 @@ ParamsToggle::ParamsToggle(QString param, QString title, QString description, QS
     hlayout->addSpacing(100);
   }
   hlayout->addSpacing(25);
-
-  checkbox = new QCheckBox(title);
-  QLabel *label = new QLabel(description);
+  
+  //Name of the parameter
+  QLabel *label = new QLabel(title);
   label->setWordWrap(true);
 
+  //toggle switch
+  Toggle* toggle_switch = new Toggle(this);
+  QSizePolicy switch_policy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+  switch_policy.setHorizontalStretch(1);
+  toggle_switch->setSizePolicy(switch_policy);
+  toggle_switch->setFixedWidth(120);
+  toggle_switch->setFixedHeight(50);
+
   // TODO: show descriptions on tap
-  //vlayout->addSpacing(50);
-  vlayout->addWidget(checkbox);
-  //vlayout->addWidget(label);
-  //vlayout->addSpacing(50);
-  hlayout->addLayout(vlayout);
+  hlayout->addWidget(label);
+  hlayout->addSpacing(50);
+  hlayout->addWidget(toggle_switch);
+  hlayout->addSpacing(50);
 
   setLayout(hlayout);
-
-  checkbox->setChecked(Params().read_db_bool(param.toStdString().c_str()));
+  if(Params().read_db_bool(param.toStdString().c_str())){
+    toggle_switch->togglePosition();
+  }
 
   setStyleSheet(R"(
     QCheckBox {
@@ -65,7 +79,7 @@ ParamsToggle::ParamsToggle(QString param, QString title, QString description, QS
     }
   )");
 
-  QObject::connect(checkbox, SIGNAL(stateChanged(int)), this, SLOT(checkboxClicked(int)));
+  QObject::connect(toggle_switch, SIGNAL(stateChanged(int)), this, SLOT(checkboxClicked(int)));
 }
 
 void ParamsToggle::checkboxClicked(int state){
@@ -166,14 +180,16 @@ QWidget * device_panel() {
 }
 
 QWidget * developer_panel() {
-  QVBoxLayout *developer_layout = new QVBoxLayout;
+  QVBoxLayout *main_layout = new QVBoxLayout;
 
   // TODO: enable SSH toggle and github keys
 
   Params params = Params();
   std::string brand = params.read_db_bool("Passive") ? "dashcam" : "openpilot";
+  std::string os_version = util::read_file("/VERSION");
   std::vector<std::pair<std::string, std::string>> labels = {
     {"Version", brand + " v" + params.get("Version", false)},
+    {"OS Version", os_version},
     {"Git Branch", params.get("GitBranch", false)},
     {"Git Commit", params.get("GitCommit", false).substr(0, 10)},
     {"Panda Firmware", params.get("PandaFirmwareHex", false)},
@@ -181,13 +197,27 @@ QWidget * developer_panel() {
 
   for (auto l : labels) {
     QString text = QString::fromStdString(l.first + ": " + l.second);
-    developer_layout->addWidget(new QLabel(text));
+    main_layout->addWidget(new QLabel(text));
   }
 
   QWidget *widget = new QWidget;
-  widget->setLayout(developer_layout);
+  widget->setLayout(main_layout);
   return widget;
 }
+
+QWidget * network_panel(QWidget * parent) {
+  QVBoxLayout *main_layout = new QVBoxLayout;
+  WifiUI *w = new WifiUI();
+  main_layout->addWidget(w);
+
+  QWidget *widget = new QWidget;
+  widget->setLayout(main_layout);
+
+  QObject::connect(w, SIGNAL(openKeyboard()), parent, SLOT(closeSidebar()));
+  QObject::connect(w, SIGNAL(closeKeyboard()), parent, SLOT(openSidebar()));
+  return widget;
+}
+
 
 void SettingsWindow::setActivePanel() {
   QPushButton *btn = qobject_cast<QPushButton*>(sender());
@@ -217,6 +247,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QWidget(parent) {
     {"device", device_panel()},
     {"toggles", toggles_panel()},
     {"developer", developer_panel()},
+    {"network", network_panel(this)},
   };
 
   for (auto &panel : panels) {
@@ -237,10 +268,15 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QWidget(parent) {
     panel_layout->addWidget(panel.second);
     QObject::connect(btn, SIGNAL(released()), this, SLOT(setActivePanel()));
   }
-
   QHBoxLayout *settings_layout = new QHBoxLayout();
   settings_layout->addSpacing(45);
-  settings_layout->addLayout(sidebar_layout);
+
+  // settings_layout->addLayout(sidebar_layout);
+  sidebar_widget = new QWidget;
+  sidebar_widget->setLayout(sidebar_layout);
+  sidebar_widget->setFixedWidth(SIDEBAR_WIDTH);
+  settings_layout->addWidget(sidebar_widget);
+
   settings_layout->addSpacing(45);
   settings_layout->addLayout(panel_layout);
   settings_layout->addSpacing(45);
@@ -252,4 +288,11 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QWidget(parent) {
       font-size: 50px;
     }
   )");
+}
+
+void SettingsWindow::closeSidebar(){
+  sidebar_widget->setFixedWidth(0);
+}
+void SettingsWindow::openSidebar(){
+  sidebar_widget->setFixedWidth(SIDEBAR_WIDTH);
 }
