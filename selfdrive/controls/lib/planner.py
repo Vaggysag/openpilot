@@ -10,7 +10,7 @@ from common.realtime import sec_since_boot
 from selfdrive.swaglog import cloudlog
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
-from selfdrive.controls.lib.longcontrol import LongCtrlState, MIN_CAN_SPEED
+from selfdrive.controls.lib.longcontrol import LongCtrlState
 from selfdrive.controls.lib.fcw import FCWChecker
 from selfdrive.controls.lib.long_mpc import LongitudinalMpc
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
@@ -26,7 +26,7 @@ LON_MPC_STEP = 0.2  # first step is 0.2s
 AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distracted
 
 # lookup tables VS speed to determine min and max accels in cruise
-# make sure these accelerations are smaller than mpc limits
+# make sure these accelerations are smaller than mpc limits'
 if use_e2e == 1:
   _A_CRUISE_MIN_V  = [-6., -6., -6., -6., -6.]
 else:
@@ -189,7 +189,7 @@ class Planner():
     else:
       starting = long_control_state == LongCtrlState.starting
       a_ego = min(sm['carState'].aEgo, 0.0)
-      reset_speed = MIN_CAN_SPEED if starting else v_ego
+      reset_speed = self.CP.minSpeedCan if starting else v_ego
       reset_accel = self.CP.startAccel if starting else a_ego
       self.v_acc = reset_speed
       self.a_acc = reset_accel

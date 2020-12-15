@@ -248,7 +248,7 @@ cl_program build_conv_program(cl_device_id device_id, cl_context context, int im
           "-DFILTER_SIZE=%d -DHALF_FILTER_SIZE=%d -DTWICE_HALF_FILTER_SIZE=%d -DHALF_FILTER_SIZE_IMAGE_W=%d",
           image_w, image_h, 1,
           filter_size, filter_size/2, (filter_size/2)*2, (filter_size/2)*image_w);
-  return CLU_LOAD_FROM_FILE(context, device_id, "imgproc/conv.cl", args);
+  return cl_program_from_file(context, device_id, "imgproc/conv.cl", args);
 }
 
 void cameras_init(MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
@@ -333,10 +333,8 @@ void cameras_init(MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
   s->front.device = s->device;
 
   s->sm_front = new SubMaster({"driverState"});
-  s->sm_rear = new SubMaster({"sensorEvents"});
   s->pm = new PubMaster({"frame", "frontFrame", "thumbnail"});
 
-  int err;
   const int rgb_width = s->rear.buf.rgb_width;
   const int rgb_height = s->rear.buf.rgb_height;
   for (int i = 0; i < FRAME_BUF_COUNT; i++) {
@@ -345,15 +343,14 @@ void cameras_init(MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
     s->stats_bufs[i] = visionbuf_allocate(0xb80);
   }
   s->prg_rgb_laplacian = build_conv_program(device_id, ctx, rgb_width/NUM_SEGMENTS_X, rgb_height/NUM_SEGMENTS_Y, 3);
-  s->krnl_rgb_laplacian = clCreateKernel(s->prg_rgb_laplacian, "rgb2gray_conv2d", &err);
-  assert(err == 0);
+  s->krnl_rgb_laplacian = CL_CHECK_ERR(clCreateKernel(s->prg_rgb_laplacian, "rgb2gray_conv2d", &err));
   // TODO: Removed CL_MEM_SVM_FINE_GRAIN_BUFFER, confirm it doesn't matter
-  s->rgb_conv_roi_cl = clCreateBuffer(ctx, CL_MEM_READ_WRITE,
-      rgb_width/NUM_SEGMENTS_X * rgb_height/NUM_SEGMENTS_Y * 3 * sizeof(uint8_t), NULL, NULL);
-  s->rgb_conv_result_cl = clCreateBuffer(ctx, CL_MEM_READ_WRITE,
-      rgb_width/NUM_SEGMENTS_X * rgb_height/NUM_SEGMENTS_Y * sizeof(int16_t), NULL, NULL);
-  s->rgb_conv_filter_cl = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-      9 * sizeof(int16_t), (void*)&lapl_conv_krnl, NULL);
+  s->rgb_conv_roi_cl = CL_CHECK_ERR(clCreateBuffer(ctx, CL_MEM_READ_WRITE,
+      rgb_width/NUM_SEGMENTS_X * rgb_height/NUM_SEGMENTS_Y * 3 * sizeof(uint8_t), NULL, &err));
+  s->rgb_conv_result_cl = CL_CHECK_ERR(clCreateBuffer(ctx, CL_MEM_READ_WRITE,
+      rgb_width/NUM_SEGMENTS_X * rgb_height/NUM_SEGMENTS_Y * sizeof(int16_t), NULL, &err));
+  s->rgb_conv_filter_cl = CL_CHECK_ERR(clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+      9 * sizeof(int16_t), (void*)&lapl_conv_krnl, &err));
   s->conv_cl_localMemSize = ( CONV_LOCAL_WORKSIZE + 2 * (3 / 2) ) * ( CONV_LOCAL_WORKSIZE + 2 * (3 / 2) );
   s->conv_cl_localMemSize *= 3 * sizeof(uint8_t);
   s->conv_cl_globalWorkSize[0] = rgb_width/NUM_SEGMENTS_X;
@@ -1792,26 +1789,39 @@ static void parse_autofocus(CameraState *s, uint8_t *d) {
   s->focus_err = max_focus*1.0;
 }
 
-static void do_autofocus(CameraState *s) {
+static std::optional<float> get_accel_z(SubMaster *sm) {
+  if (sm->update(0) > 0) {
+    for (auto event : (*sm)["sensorEvents"].getSensorEvents()) {
+      if (event.which() == cereal::SensorEventData::ACCELERATION) {
+        if (auto v = event.getAcceleration().getV(); v.size() >= 3) 
+          return -v[2];
+        break;
+      }
+    }
+  }
+  return std::nullopt;
+}
+
+static void do_autofocus(CameraState *s, SubMaster *sm) {
   // params for focus PI controller
-  const float focus_kp = 0.005;
-
-  float err = s->focus_err;
-  float sag = (s->last_sag_acc_z/9.8) * 128;
-
   const int dac_up = s->device == DEVICE_LP3? LP3_AF_DAC_UP:OP3T_AF_DAC_UP;
   const int dac_down = s->device == DEVICE_LP3? LP3_AF_DAC_DOWN:OP3T_AF_DAC_DOWN;
 
-  float lens_true_pos = s->lens_true_pos;
-  if (!isnan(err))  {
+  float lens_true_pos = s->lens_true_pos.load();
+  if (!isnan(s->focus_err)) {
     // learn lens_true_pos
-    lens_true_pos -= err*focus_kp;
+    const float focus_kp = 0.005;
+    lens_true_pos -= s->focus_err*focus_kp;
   }
 
+  if (auto accel_z = get_accel_z(sm)) {
+    s->last_sag_acc_z = *accel_z;
+  }
+  const float sag = (s->last_sag_acc_z / 9.8) * 128;
   // stay off the walls
   lens_true_pos = std::clamp(lens_true_pos, float(dac_down), float(dac_up));
   int target = std::clamp(lens_true_pos - sag, float(dac_down), float(dac_up));
-  s->lens_true_pos = lens_true_pos;
+  s->lens_true_pos.store(lens_true_pos);
 
   /*char debug[4096];
   char *pdebug = debug;
@@ -2024,12 +2034,12 @@ static void* ops_thread(void* arg) {
   CameraExpInfo front_op;
 
   set_thread_name("camera_settings");
-
+  SubMaster sm({"sensorEvents"});
   while(!do_exit) {
     rear_op = rear_exp.load();
     if (rear_op.op_id != rear_op_id_last) {
       do_autoexposure(&s->rear, rear_op.grey_frac);
-      do_autofocus(&s->rear);
+      do_autofocus(&s->rear, &sm);
       rear_op_id_last = rear_op.op_id;
     }
 
@@ -2052,36 +2062,9 @@ void camera_process_front(MultiCameraState *s, CameraState *c, int cnt) {
 // called by processing_thread
 void camera_process_frame(MultiCameraState *s, CameraState *c, int cnt) {
   const CameraBuf *b = &c->buf;
-  // cache rgb roi and write to cl
-
-  // gz compensation
-  s->sm_rear->update(0);
-  if (s->sm_rear->updated("sensorEvents")) {
-    float vals[3] = {0.0};
-    bool got_accel = false;
-    auto sensor_events = (*(s->sm_rear))["sensorEvents"].getSensorEvents();
-    for (auto sensor_event : sensor_events) {
-      if (sensor_event.which() == cereal::SensorEventData::ACCELERATION) {
-        auto v = sensor_event.getAcceleration().getV();
-        if (v.size() < 3) {
-          continue;
-        }
-        for (int j = 0; j < 3; j++) {
-          vals[j] = v[j];
-        }
-        got_accel = true;
-        break;
-      }
-    }
-    uint64_t ts = nanos_since_boot();
-    if (got_accel && ts - s->rear.last_sag_ts > 10000000) { // 10 ms
-      s->rear.last_sag_ts = ts;
-      s->rear.last_sag_acc_z = -vals[2];
-    }
-  }
 
   // sharpness scores
-  int roi_id = cnt % ARRAYSIZE(s->lapres);  // rolling roi
+  const int roi_id = cnt % ARRAYSIZE(s->lapres);  // rolling roi
   int roi_x_offset = roi_id % (ROI_X_MAX-ROI_X_MIN+1);
   int roi_y_offset = roi_id / (ROI_X_MAX-ROI_X_MIN+1);
 
@@ -2093,27 +2076,27 @@ void camera_process_frame(MultiCameraState *s, CameraState *c, int cnt) {
             b->rgb_width/NUM_SEGMENTS_X * 3);
   }
 
-  assert(clEnqueueWriteBuffer(b->q, s->rgb_conv_roi_cl, true, 0,
-                              b->rgb_width / NUM_SEGMENTS_X * b->rgb_height / NUM_SEGMENTS_Y * 3 * sizeof(uint8_t), s->rgb_roi_buf.get(), 0, 0, 0) == 0);
-  assert(clSetKernelArg(s->krnl_rgb_laplacian, 0, sizeof(cl_mem), (void *)&s->rgb_conv_roi_cl) == 0);
-  assert(clSetKernelArg(s->krnl_rgb_laplacian, 1, sizeof(cl_mem), (void *)&s->rgb_conv_result_cl) == 0);
-  assert(clSetKernelArg(s->krnl_rgb_laplacian, 2, sizeof(cl_mem), (void *)&s->rgb_conv_filter_cl) == 0);
-  assert(clSetKernelArg(s->krnl_rgb_laplacian, 3, s->conv_cl_localMemSize, 0) == 0);
+  CL_CHECK(clEnqueueWriteBuffer(b->q, s->rgb_conv_roi_cl, true, 0,
+                              b->rgb_width / NUM_SEGMENTS_X * b->rgb_height / NUM_SEGMENTS_Y * 3 * sizeof(uint8_t), s->rgb_roi_buf.get(), 0, 0, 0));
+  CL_CHECK(clSetKernelArg(s->krnl_rgb_laplacian, 0, sizeof(cl_mem), (void *)&s->rgb_conv_roi_cl));
+  CL_CHECK(clSetKernelArg(s->krnl_rgb_laplacian, 1, sizeof(cl_mem), (void *)&s->rgb_conv_result_cl));
+  CL_CHECK(clSetKernelArg(s->krnl_rgb_laplacian, 2, sizeof(cl_mem), (void *)&s->rgb_conv_filter_cl));
+  CL_CHECK(clSetKernelArg(s->krnl_rgb_laplacian, 3, s->conv_cl_localMemSize, 0));
   cl_event conv_event;
-  assert(clEnqueueNDRangeKernel(b->q, s->krnl_rgb_laplacian, 2, NULL,
-                                s->conv_cl_globalWorkSize, s->conv_cl_localWorkSize, 0, 0, &conv_event) == 0);
+  CL_CHECK(clEnqueueNDRangeKernel(b->q, s->krnl_rgb_laplacian, 2, NULL,
+                                s->conv_cl_globalWorkSize, s->conv_cl_localWorkSize, 0, 0, &conv_event));
   clWaitForEvents(1, &conv_event);
-  clReleaseEvent(conv_event);
+  CL_CHECK(clReleaseEvent(conv_event));
 
-  assert(clEnqueueReadBuffer(b->q, s->rgb_conv_result_cl, true, 0,
-                             b->rgb_width / NUM_SEGMENTS_X * b->rgb_height / NUM_SEGMENTS_Y * sizeof(int16_t), s->conv_result.get(), 0, 0, 0) == 0);
+  CL_CHECK(clEnqueueReadBuffer(b->q, s->rgb_conv_result_cl, true, 0,
+                             b->rgb_width / NUM_SEGMENTS_X * b->rgb_height / NUM_SEGMENTS_Y * sizeof(int16_t), s->conv_result.get(), 0, 0, 0));
 
-  get_lapmap_one(s->conv_result.get(), &s->lapres[roi_id], b->rgb_width / NUM_SEGMENTS_X, b->rgb_height / NUM_SEGMENTS_Y);
+  s->lapres[roi_id] = get_lapmap_one(s->conv_result.get(), b->rgb_width / NUM_SEGMENTS_X, b->rgb_height / NUM_SEGMENTS_Y);
 
   // setup self recover
   const float lens_true_pos = s->rear.lens_true_pos;
   std::atomic<int>& self_recover = s->rear.self_recover;
-  if (is_blur(&s->lapres[0]) &&
+  if (is_blur(&s->lapres[0], std::size(s->lapres)) &&
       (lens_true_pos < (s->rear.device == DEVICE_LP3 ? LP3_AF_DAC_DOWN : OP3T_AF_DAC_DOWN) + 1 ||
        lens_true_pos > (s->rear.device == DEVICE_LP3 ? LP3_AF_DAC_UP : OP3T_AF_DAC_UP) - 1) &&
       self_recover < 2) {
@@ -2143,11 +2126,11 @@ void camera_process_frame(MultiCameraState *s, CameraState *c, int cnt) {
     if (env_send_rear) {
       fill_frame_image(framed, (uint8_t*)b->cur_rgb_buf->addr, b->rgb_width, b->rgb_height, b->rgb_stride);
     }
-    framed.setFocusVal(kj::ArrayPtr<const int16_t>(&s->rear.focus[0], NUM_FOCUS));
-    framed.setFocusConf(kj::ArrayPtr<const uint8_t>(&s->rear.confidence[0], NUM_FOCUS));
-    framed.setSharpnessScore(kj::ArrayPtr<const uint16_t>(&s->lapres[0], ARRAYSIZE(s->lapres)));
+    framed.setFocusVal(s->rear.focus);
+    framed.setFocusConf(s->rear.confidence);
+    framed.setSharpnessScore(s->lapres);
     framed.setRecoverState(self_recover);
-    framed.setTransform(kj::ArrayPtr<const float>(&b->yuv_transform.v[0], 9));
+    framed.setTransform(b->yuv_transform.v);
     s->pm->send("frame", msg);
   }
 
@@ -2288,13 +2271,12 @@ void cameras_close(MultiCameraState *s) {
     visionbuf_free(&s->focus_bufs[i]);
     visionbuf_free(&s->stats_bufs[i]);
   }
-  clReleaseMemObject(s->rgb_conv_roi_cl);
-  clReleaseMemObject(s->rgb_conv_result_cl);
-  clReleaseMemObject(s->rgb_conv_filter_cl);
+  CL_CHECK(clReleaseMemObject(s->rgb_conv_roi_cl));
+  CL_CHECK(clReleaseMemObject(s->rgb_conv_result_cl));
+  CL_CHECK(clReleaseMemObject(s->rgb_conv_filter_cl));
 
-  clReleaseProgram(s->prg_rgb_laplacian);
-  clReleaseKernel(s->krnl_rgb_laplacian);
+  CL_CHECK(clReleaseKernel(s->krnl_rgb_laplacian));
+  CL_CHECK(clReleaseProgram(s->prg_rgb_laplacian));
   delete s->sm_front;
-  delete s->sm_rear;
   delete s->pm;
 }
