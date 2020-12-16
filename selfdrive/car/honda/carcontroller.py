@@ -98,6 +98,7 @@ class CarController():
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
+    self.radarVin_idx = 0
 
     self.params = CarControllerParams(CP)
 
@@ -163,11 +164,10 @@ class CarController():
     # Send CAN commands.
     can_sends = []
 
-    if CS.CP.carFingerprint in HONDA_BOSCH and CS.CP.openpilotLongitudinalControl:
-      # TODO: radar disable hacked together to see if it works
-      if (frame % 10) == 0:
-        # tester present - w/ no response (keeps radar disabled)
-        can_sends.append([0x18DAB0F1, 0, b"\x02\x3E\x80\x00\x00\x00\x00\x00", 0]) # force 0 for grey panda
+    #if using radar, we need to send the VIN
+    can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx, CS.radarVIN, 2, 0x94, CS.useTeslaRadar, CS.radarPosition, CS.radarEpasType))
+    self.radarVin_idx += 1
+    self.radarVin_idx = self.radarVin_idx  % 3
 
     # Send steering command.
     idx = frame % 4
