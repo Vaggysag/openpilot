@@ -36,7 +36,7 @@ AHB_MAX_DISTANCE = 100  # ignore if more than 100m
 USE_ALL_OBJECTS = False
 
 def _create_radard_can_parser():
-  dbc_f = 'tesla_radar.dbc'
+  dbc_f = 'teslaradar.dbc'
   # TODO: determine this from the car
   bus = 2
 

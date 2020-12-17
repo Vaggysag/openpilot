@@ -85,8 +85,8 @@ def only_toyota_left(candidate_cars):
 
 # **** for use live only ****
 def fingerprint(logcan, sendcan):
-  fixed_fingerprint = os.environ.get('FINGERPRINT', "")
-  skip_fw_query = os.environ.get('SKIP_FW_QUERY', False)
+  fixed_fingerprint = "HONDA CIVIC HATCHBACK 2017 SEDAN/COUPE 2019"
+  skip_fw_query = True
 
   if not fixed_fingerprint and not skip_fw_query:
     # Vin query only reliably works thorugh OBDII
@@ -172,6 +172,11 @@ def fingerprint(logcan, sendcan):
 
 def get_car(logcan, sendcan):
   candidate, fingerprints, vin, car_fw, source = fingerprint(logcan, sendcan)
+
+  candidate = "HONDA CIVIC HATCHBACK 2017 SEDAN/COUPE 2019"
+  vin = "SHHFK7H60KU201289"
+  car_fw = []
+  has_relay = False
 
   if candidate is None:
     cloudlog.warning("car doesn't match any fingerprints: %r", fingerprints)

@@ -3,11 +3,10 @@ from ctypes import create_string_buffer
 from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import HONDA_BOSCH, CAR
 
-# CAN bus layout with relay
-# 0 = ACC-CAN - radar side
-# 1 = F-CAN B - powertrain
-# 2 = ACC-CAN - camera side
-# 3 = F-CAN A - OBDII port
+# CAN bus layout with giraffe
+# 0 = F-CAN B - powertrain
+# 1 = ACC-CAN - camera side
+# 2 = ACC-CAN - radar side
 
 def get_pt_bus(car_fingerprint):
   return 0 if car_fingerprint in HONDA_BOSCH else 0 # default is 1 but force 0 for grey panda
@@ -16,7 +15,7 @@ def get_pt_bus(car_fingerprint):
 def get_lkas_cmd_bus(car_fingerprint, openpilot_longitudinal_control=False):
   if openpilot_longitudinal_control:
     return get_pt_bus(car_fingerprint)
-  return 2 if car_fingerprint in HONDA_BOSCH else 2 # default is 0 but force 2 for grey panda
+  return 0 if car_fingerprint in HONDA_BOSCH else 0 # default is 0 but force 2 for grey panda, force 0 for tesla radar
 
 
 def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_cmd, fcw, idx, car_fingerprint, stock_brake):
@@ -167,20 +166,13 @@ def spam_buttons_command(packer, button_val, idx, car_fingerprint):
 
 
 def create_radar_VIN_msg(id, radarVIN, radarCAN, radarTriggerMessage, useRadar, radarPosition, radarEpasType):
-  id = 0
-  radarVIN = "5YJSA1E11GF150353"
-  radarCAN = 2
-  radarTriggerMessage = 0x94
-  useRadar = True
-  radarPosition = 1
-  radarEpasType = 3
   msg_id = 0x560
   msg_len = 8
   msg = create_string_buffer(msg_len)
   if id == 0:
-    struct.pack_into('BBBBBBBB', msg, 0, id,radarCAN,useRadar + (radarPosition << 1) + (radarEpasType << 3), ((radarTriggerMessage >> 8) & 0xFF),(radarTriggerMessage & 0xFF),ord(radarVIN[0]),ord(radarVIN[1]),ord(radarVIN[2]))
+    struct.pack_into('BBBBBBBB', msg, 0, id, radarCAN, useRadar + (radarPosition << 1) + (radarEpasType << 3), ((radarTriggerMessage >> 8) & 0xFF), (radarTriggerMessage & 0xFF), ord(radarVIN[0]), ord(radarVIN[1]), ord(radarVIN[2]))
   if id == 1:
-    struct.pack_into('BBBBBBBB', msg, 0, id,ord(radarVIN[3]),ord(radarVIN[4]),ord(radarVIN[5]),ord(radarVIN[6]),ord(radarVIN[7]),ord(radarVIN[8]),ord(radarVIN[9]))
+    struct.pack_into('BBBBBBBB', msg, 0, id, ord(radarVIN[3]), ord(radarVIN[4]), ord(radarVIN[5]), ord(radarVIN[6]), ord(radarVIN[7]), ord(radarVIN[8]), ord(radarVIN[9]))
   if id == 2:
-    struct.pack_into('BBBBBBBB', msg, 0, id,ord(radarVIN[10]),ord(radarVIN[11]),ord(radarVIN[12]),ord(radarVIN[13]),ord(radarVIN[14]),ord(radarVIN[15]),ord(radarVIN[16]))
+    struct.pack_into('BBBBBBBB', msg, 0, id, ord(radarVIN[10]), ord(radarVIN[11]), ord(radarVIN[12]), ord(radarVIN[13]), ord(radarVIN[14]), ord(radarVIN[15]), ord(radarVIN[16]))
   return [msg_id, 0, msg.raw, 0]

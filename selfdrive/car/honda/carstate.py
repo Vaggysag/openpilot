@@ -174,7 +174,7 @@ class CarState(CarStateBase):
     self.cruise_setting = 0
     self.v_cruise_pcm_prev = 0
     self.cruise_mode = 0
-    
+
     # tesla radar config
     self.useTeslaRadar = True
     self.radarVIN = "5YJSA1E11GF150353"
