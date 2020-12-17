@@ -166,6 +166,13 @@ def spam_buttons_command(packer, button_val, idx, car_fingerprint):
 
 
 def create_radar_VIN_msg(id, radarVIN, radarCAN, radarTriggerMessage, useRadar, radarPosition, radarEpasType):
+  id = 0
+  radarVIN = "5YJSA1E11GF150353"
+  radarCAN = 2
+  radarTriggerMessage = 0x94
+  useRadar = True
+  radarPosition = 1
+  radarEpasType = 3
   msg_id = 0x560
   msg_len = 8
   msg = create_string_buffer(msg_len)

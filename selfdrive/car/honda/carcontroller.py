@@ -99,6 +99,10 @@ class CarController():
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
     self.radarVin_idx = 0
+    self.radarVIN = "5YJSA1E11GF150353"
+    self.useTeslaRadar = True
+    self.radarPosition = 1
+    self.radarEpasType = 3
 
     self.params = CarControllerParams(CP)
 
@@ -165,9 +169,10 @@ class CarController():
     can_sends = []
 
     #if using radar, we need to send the VIN
-    can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx, str(CS.radarVIN), 2, 0x94, CS.useTeslaRadar, int(CS.radarPosition), int(CS.radarEpasType)))
-    self.radarVin_idx += 1
-    self.radarVin_idx = self.radarVin_idx  % 3
+    if (frame % 100 == 0):
+      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVIN), 2, 0x94, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
+      self.radarVin_idx += 1
+      self.radarVin_idx = self.radarVin_idx  % 3
 
     # Send steering command.
     idx = frame % 4
