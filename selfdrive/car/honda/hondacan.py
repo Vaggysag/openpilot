@@ -163,23 +163,3 @@ def spam_buttons_command(packer, button_val, idx, car_fingerprint):
   }
   bus = get_pt_bus(car_fingerprint)
   return packer.make_can_msg("SCM_BUTTONS", bus, values, idx)
-
-
-def create_radar_VIN_msg(id, radarVIN, radarCAN, radarTriggerMessage, useRadar, radarPosition, radarEpasType):
-  id = 0
-  radarVIN = "5YJSA1E11GF150353"
-  radarCAN = 2
-  radarTriggerMessage = 0x94
-  useRadar = True
-  radarPosition = 1
-  radarEpasType = 3
-  msg_id = 0x560
-  msg_len = 8
-  msg = create_string_buffer(msg_len)
-  if id == 0:
-    struct.pack_into('BBBBBBBB', msg, 0, id, radarCAN, useRadar + (radarPosition << 1) + (radarEpasType << 3), ((radarTriggerMessage >> 8) & 0xFF), (radarTriggerMessage & 0xFF), ord(radarVIN[0]), ord(radarVIN[1]), ord(radarVIN[2]))
-  if id == 1:
-    struct.pack_into('BBBBBBBB', msg, 0, id, ord(radarVIN[3]), ord(radarVIN[4]), ord(radarVIN[5]), ord(radarVIN[6]), ord(radarVIN[7]), ord(radarVIN[8]), ord(radarVIN[9]))
-  if id == 2:
-    struct.pack_into('BBBBBBBB', msg, 0, id, ord(radarVIN[10]), ord(radarVIN[11]), ord(radarVIN[12]), ord(radarVIN[13]), ord(radarVIN[14]), ord(radarVIN[15]), ord(radarVIN[16]))
-  return [msg_id, 0, msg.raw, 0]

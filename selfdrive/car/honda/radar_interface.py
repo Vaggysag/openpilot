@@ -1,21 +1,38 @@
-#!/usr/bin/env python3.7
-import os
-import time
-from cereal import car, tesla
+#!/usr/bin/env python3
+from cereal import car
 from opendbc.can.parser import CANParser
 # from cereal.services import service_list
 # import cereal.messaging as messaging
 from selfdrive.car.interfaces import RadarInterfaceBase
+from selfdrive.car.honda.values import DBC
 from common.params import Params
 
 
+def _create_nidec_can_parser(car_fingerprint):
+  radar_messages = [0x400] + list(range(0x430, 0x43A)) + list(range(0x440, 0x446))
+  signals = list(zip(['RADAR_STATE'] +
+                ['LONG_DIST'] * 16 + ['NEW_TRACK'] * 16 + ['LAT_DIST'] * 16 +
+                ['REL_SPEED'] * 16,
+                [0x400] + radar_messages[1:] * 4,
+                [0] + [255] * 16 + [1] * 16 + [0] * 16 + [0] * 16))
+  checks = list(zip([0x445], [20]))
+  return CANParser(DBC[car_fingerprint]['radar'], signals, checks, 1)
+
+
 BOSCH_MAX_DIST = 250.  # max distance for radar
-# use these for tracks (5 tracks)
-RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
-RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
-# use these for point cloud  (32 points)
-# RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
-# RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
+
+# Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
+# definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
+USE_ALL_OBJECTS = False
+if not USE_ALL_OBJECTS:
+  # use these for tracks (5 tracks)
+  RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
+  RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
+else:
+  # use these for point cloud  (32 points)
+  RADAR_A_MSGS = list(range(0x310, 0x36F, 3))
+  RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
+
 OBJECT_MIN_PROBABILITY = 50.
 CLASS_MIN_PROBABILITY = 50.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9  # time in ns, radar sends data at 0.06 s
@@ -24,20 +41,16 @@ VALID_MESSAGE_COUNT_THRESHOLD = 4
 # they are use to detect objects that are moving either in the same direction with us or towards us
 # for AHB radar is forced in low speed mode that widents the angle and reduces distance
 # in these cases at night we will rely on visual radar to detect the lead car
-AHB_VALID_MESSAGE_COUNT_THRESHOLD = 4  # -1 to use any point
-AHB_OBJECT_MIN_PROBABILITY = 20.  # 0. to use any point
-AHB_CLASS_MIN_PROBABILITY = 10.  # 0. to use any point
-AHB_STATIONARY_MARGIN = 1.8  # m/s
-AHB_DEBUG = False
-AHB_MAX_DISTANCE = 100  # ignore if more than 100m
+# AHB_VALID_MESSAGE_COUNT_THRESHOLD = 4  # -1 to use any point
+# AHB_OBJECT_MIN_PROBABILITY = 20.  # 0. to use any point
+# AHB_CLASS_MIN_PROBABILITY = 10.  # 0. to use any point
+# AHB_STATIONARY_MARGIN = 1.8  # m/s
+# AHB_DEBUG = False
+# AHB_MAX_DISTANCE = 100  # ignore if more than 100m
 
-# Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
-# definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
-USE_ALL_OBJECTS = False
 
-def _create_radard_can_parser():
-  dbc_f = 'teslaradar.dbc'
-  # TODO: determine this from the car
+def _create_tesla_can_parser(car_fingerprint):
+  # TODO: Determine which radar we're using automagically
   bus = 2
 
   msg_a_n = len(RADAR_A_MSGS)
@@ -59,13 +72,15 @@ def _create_radard_can_parser():
 
   checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [6]*(msg_a_n + msg_b_n)))
 
-  return CANParser(os.path.splitext(dbc_f)[0].encode('utf8'), signals, checks, bus)
+  return CANParser(DBC[car_fingerprint]['radar'], signals, checks, bus)
 
 
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
     params = Params()
+    # TODO: get this from a param elsewhere
+    use_tesla = True
     # radar
     self.pts = {}
     # self.extPts = {}
@@ -74,29 +89,37 @@ class RadarInterface(RadarInterfaceBase):
     self.TRACK_RIGHT_LANE = False
     self.updated_messages = set()
     self.canErrorCounter = 0
-    self.AHB_car_detected = False
+    # self.AHB_car_detected = False
     self.track_id = 0
     self.radar_fault = False
     self.radar_wrong_config = False
     self.radar_off_can = CP.radarOffCan
     self.radar_ts = CP.radarTimeStep
-    self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-    self.rcp = _create_radard_can_parser()
-    self.radarOffset = 0.
-    self.trackId = 1
-    self.trigger_start_msg = RADAR_A_MSGS[0]
-    self.trigger_end_msg = RADAR_B_MSGS[-1]
-
-    self.delay = int(round(0.1 / CP.radarTimeStep))   # 0.1s delay of radar
+    if self.radar_off_can:
+      self.rcp = None
+    elif not self.radar_off_can:
+      if use_tesla:
+        self.pts = {}
+        # self.extPts = {}
+        self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
+        self.rcp = _create_tesla_can_parser(CP.carFingerprint)
+        self.radarOffset = params.get("TeslaRadarOffset")
+        self.trackId = 1
+        self.trigger_start_msg = RADAR_A_MSGS[0]
+        self.trigger_end_msg = RADAR_B_MSGS[-1]
+      else:
+        # Nidec
+        self.rcp = _create_nidec_can_parser(CP.carFingerprint)
+        self.trigger_msg = 0x445
+        self.updated_messages = set()
+        self.delay = int(round(0.1 / CP.radarTimeStep))   # 0.1s delay of radar
 
   # def update(self, can_strings, v_ego):
   def update(self, can_strings):
     # radard at 20Hz and return no points
-    # if self.radar_off_can:
-    #   if 'NO_RADAR_SLEEP' not in os.environ:
-    #     time.sleep(self.radar_ts)
-    #    return car.RadarData.new_message(), self.extPts.values(), self.AHB_car_detected
-    #    return car.RadarData.new_message()
+    if self.radar_off_can:
+      # return car.RadarData.new_message(), self.extPts.values(), self.AHB_car_detected
+      return car.RadarData.new_message()
 
     if can_strings is not None:
       vls = self.rcp.update_strings(can_strings)
@@ -143,7 +166,7 @@ class RadarInterface(RadarInterfaceBase):
       elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
         self.valid_cnt[message] += 1
       else:
-        self.valid_cnt[message] = max(self.valid_cnt[message] -20, 0)
+        self.valid_cnt[message] = max(self.valid_cnt[message] - 20, 0)
         if (self.valid_cnt[message] == 0) and (message in self.pts):
           del self.pts[message]
           # del self.extPts[message]
@@ -163,7 +186,7 @@ class RadarInterface(RadarInterfaceBase):
       # if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
       #     (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
       #     (cpt2['Class'] < 4) and ((cpt['LongSpeed'] >= AHB_STATIONARY_MARGIN - v_ego) or (v_ego < 2)):
-      if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']> 0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
+      if (cpt['Valid'] or cpt['Tracked']) and (cpt['LongDist'] > 0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
           (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
           (cpt2['Class'] < 4):
         if message not in self.pts and (cpt['Tracked']):
@@ -172,7 +195,7 @@ class RadarInterface(RadarInterfaceBase):
           # self.extPts[message] = tesla.TeslaRadarPoint.new_message()
           # self.extPts[message].trackId = self.trackId
           self.trackId = (self.trackId + 1) & 0xFFFFFFFFFFFFFFFF
-          if self.trackId ==0:
+          if self.trackId == 0:
             self.trackId = 1
         if message in self.pts:
           self.pts[message].dRel = cpt['LongDist']  # from front of car
@@ -206,7 +229,7 @@ class RadarInterface(RadarInterfaceBase):
       self.canErrorCounter += 1
     else:
       self.canErrorCounter = 0
-    #BB: Only trigger canError for 3 consecutive errors
+    # BB: Only trigger canError for 3 consecutive errors
     if self.canErrorCounter > 9:
       ret.errors = errors
     else:
@@ -224,6 +247,6 @@ if __name__ == "__main__":
     # print(chr(27) + "[2J")
     # print(ret,retext)
     # ret = RI.update(can_strings = None, v_ego = 0.)
-    ret = RI.update(can_strings = None)
+    ret = RI.update(can_strings=None)
     print(chr(27) + "[2J")
     print(ret)

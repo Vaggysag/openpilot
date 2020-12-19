@@ -361,7 +361,7 @@ def thermald_thread():
     should_start = all(startup_conditions.values())
 
     startup_conditions["hardware_supported"] = health is not None and health.health.hwType not in [log.HealthData.HwType.whitePanda]
-    set_offroad_alert_if_changed("Offroad_HardwareUnsupported", not startup_conditions["hardware_supported"])
+    # set_offroad_alert_if_changed("Offroad_HardwareUnsupported", not startup_conditions["hardware_supported"])
 
     if should_start:
       if not should_start_prev:

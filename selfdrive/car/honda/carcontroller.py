@@ -4,9 +4,11 @@ from common.realtime import DT_CTRL
 from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip, interp
 from selfdrive.car import create_gas_command
-from selfdrive.car.honda import hondacan
+from selfdrive.car.honda import hondacan, teslaradarcan
 from selfdrive.car.honda.values import CruiseButtons, CAR, VISUAL_HUD, HONDA_BOSCH
 from opendbc.can.packer import CANPacker
+from common.params import Params
+
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -98,11 +100,16 @@ class CarController():
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
+
+    # tesla radar
+    p = Params()
     self.radarVin_idx = 0
-    self.radarVIN = "5YJSA1E11GF150353"
-    self.useTeslaRadar = True
+    self.useTeslaRadar = 1
+    self.radarVin = "5YJSA1E11GF150353"
     self.radarPosition = 1
     self.radarEpasType = 3
+    self.radarBus = 2
+    self.radarTriggerMessage = 0x17c
 
     self.params = CarControllerParams(CP)
 
@@ -168,12 +175,6 @@ class CarController():
     # Send CAN commands.
     can_sends = []
 
-    #if using radar, we need to send the VIN
-    if (frame % 100 == 0):
-      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVIN), 2, 0x94, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
-      self.radarVin_idx += 1
-      self.radarVin_idx = self.radarVin_idx  % 3
-
     # Send steering command.
     idx = frame % 4
     can_sends.append(hondacan.create_steering_control(self.packer, apply_steer,
@@ -211,5 +212,12 @@ class CarController():
             # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
             # This prevents unexpected pedal range rescaling
             can_sends.append(create_gas_command(self.packer, apply_gas, idx))
+
+    #if using radar, we need to send the VIN
+    if (frame % 100 == 0):
+      can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVin), self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
+      print("***SENDING TESLA RADAR VIN***")
+      self.radarVin_idx += 1
+      self.radarVin_idx = self.radarVin_idx  % 3
 
     return can_sends

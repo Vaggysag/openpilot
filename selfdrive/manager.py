@@ -164,7 +164,7 @@ ThermalStatus = cereal.log.ThermalData.ThermalStatus
 # comment out anything you don't want to run
 managed_processes = {
   "thermald": "selfdrive.thermald.thermald",
-  "uploader": "selfdrive.loggerd.uploader",
+# "uploader": "selfdrive.loggerd.uploader",
   "deleter": "selfdrive.loggerd.deleter",
   "controlsd": "selfdrive.controls.controlsd",
   "plannerd": "selfdrive.controls.plannerd",
@@ -561,6 +561,11 @@ def main():
     ("VisionRadarToggle", "1"),
     ("LaneChangeEnabled", "1"),
     ("IsDriverViewEnabled", "0"),
+    ("TeslaRadarVin", "5YJSA1E11GF150353"),
+    # offset of the radar location on the front of the car. measured in meters. positive is to the right tire. -0.58 is for 2017 Civic Hatchback
+    ("TeslaRadarOffset", "0."),
+    ("TeslaRadarPosition", "1"),
+    ("TeslaRadarEpasType", "3"),
   ]
 
   # set unset params

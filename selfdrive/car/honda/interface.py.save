@@ -136,7 +136,7 @@ class CarInterface(CarInterfaceBase):
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModel.hondaBoschGiraffe
       ret.enableCamera = True
-      ret.radarOffCan = not ret.openpilotLongitudinalControl
+      ret.radarOffCan = not
       ret.openpilotLongitudinalControl = True # force true
       ret.enableCruise = not ret.openpilotLongitudinalControl
       ret.communityFeature = ret.openpilotLongitudinalControl

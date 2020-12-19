@@ -175,13 +175,6 @@ class CarState(CarStateBase):
     self.v_cruise_pcm_prev = 0
     self.cruise_mode = 0
 
-    # tesla radar config
-    self.useTeslaRadar = True
-    self.radarVIN = "5YJSA1E11GF150353"
-    self.radarOffset = 0.
-    self.radarPosition = 1
-    self.radarEpasType = 3
-
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
 
