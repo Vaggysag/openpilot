@@ -21,7 +21,7 @@ ALT_BRAKE_FLAG = 1
 BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 3.5
+  return float(accel) / 5.0
 
 def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
@@ -437,7 +437,7 @@ class CarInterface(CarInterfaceBase):
 
     if candidate in HONDA_BOSCH:
       ret.gasMaxBP = [0.]   # m/s
-      ret.gasMaxV = [0.2]
+      ret.gasMaxV = [0.23]
       ret.brakeMaxBP = [0.]  # m/s
       ret.brakeMaxV = [1.]   # max brake allowed
     else:
