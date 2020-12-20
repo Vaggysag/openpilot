@@ -10,9 +10,9 @@ import time
 import traceback
 
 from cereal import log
-from common.hardware import HARDWARE
 from common.api import Api
 from common.params import Params
+from selfdrive.hardware import HARDWARE
 from selfdrive.loggerd.xattr_cache import getxattr, setxattr
 from selfdrive.loggerd.config import ROOT
 from selfdrive.swaglog import cloudlog
@@ -69,10 +69,7 @@ def clear_locks(root):
       cloudlog.exception("clear_locks failed")
 
 def is_on_wifi():
-  try:
-    return HARDWARE.get_network_type() == NetworkType.wifi
-  except Exception:
-    return False
+  return HARDWARE.get_network_type() == NetworkType.wifi
 
 class Uploader():
   def __init__(self, dongle_id, root):

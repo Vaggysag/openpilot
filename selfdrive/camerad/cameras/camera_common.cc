@@ -53,7 +53,7 @@ void CameraBuf::init(cl_device_id device_id, cl_context context, CameraState *s,
   camera_state = s;
   frame_buf_count = frame_cnt;
   frame_size = ci->frame_height * ci->frame_stride;
- 
+
   camera_bufs = std::make_unique<VisionBuf[]>(frame_buf_count);
   camera_bufs_metadata = std::make_unique<FrameMetadata[]>(frame_buf_count);
   for (int i = 0; i < frame_buf_count; i++) {
@@ -160,10 +160,12 @@ bool CameraBuf::acquire() {
     CL_CHECK(clSetKernelArg(krnl_debayer, 0, sizeof(cl_mem), &camrabuf_cl));
     CL_CHECK(clSetKernelArg(krnl_debayer, 1, sizeof(cl_mem), &cur_rgb_buf->buf_cl));
 #ifdef QCOM2
-    CL_CHECK(clSetKernelArg(krnl_debayer, 2, camera_state->debayer_cl_localMemSize, 0));
-    CL_CHECK(clEnqueueNDRangeKernel(q, krnl_debayer, 2, NULL,
-                                  camera_state->debayer_cl_globalWorkSize, camera_state->debayer_cl_localWorkSize,
-                                  0, 0, &debayer_event));
+    constexpr int localMemSize = (DEBAYER_LOCAL_WORKSIZE + 2 * (3 / 2)) * (DEBAYER_LOCAL_WORKSIZE + 2 * (3 / 2)) * sizeof(float);
+    const size_t globalWorkSize[] = {size_t(camera_state->ci.frame_width), size_t(camera_state->ci.frame_height)};
+    const size_t localWorkSize[] = {DEBAYER_LOCAL_WORKSIZE, DEBAYER_LOCAL_WORKSIZE};
+    CL_CHECK(clSetKernelArg(krnl_debayer, 2, localMemSize, 0));
+    CL_CHECK(clEnqueueNDRangeKernel(q, krnl_debayer, 2, NULL, globalWorkSize, localWorkSize,
+                                    0, 0, &debayer_event));
 #else
     float digital_gain = camera_state->digital_gain;
     if ((int)digital_gain == 0) {
@@ -172,7 +174,7 @@ bool CameraBuf::acquire() {
     CL_CHECK(clSetKernelArg(krnl_debayer, 2, sizeof(float), &digital_gain));
     const size_t debayer_work_size = rgb_height;  // doesn't divide evenly, is this okay?
     CL_CHECK(clEnqueueNDRangeKernel(q, krnl_debayer, 1, NULL,
-                                  &debayer_work_size, NULL, 0, 0, &debayer_event));
+                                    &debayer_work_size, NULL, 0, 0, &debayer_event));
 #endif
   } else {
     assert(cur_rgb_buf->len >= frame_size);
@@ -351,10 +353,8 @@ void set_exposure_target(CameraState *c, const uint8_t *pix_ptr, int x_start, in
 extern volatile sig_atomic_t do_exit;
 
 void *processing_thread(MultiCameraState *cameras, const char *tname,
-                        CameraState *cs, int priority, process_thread_cb callback) {
+                          CameraState *cs, process_thread_cb callback) {
   set_thread_name(tname);
-  int err = set_realtime_priority(priority);
-  LOG("%s start! setpriority returns %d", tname, err);
 
   for (int cnt = 0; !do_exit; cnt++) {
     if (!cs->buf.acquire()) continue;
@@ -367,8 +367,8 @@ void *processing_thread(MultiCameraState *cameras, const char *tname,
 }
 
 std::thread start_process_thread(MultiCameraState *cameras, const char *tname,
-                                 CameraState *cs, int priority, process_thread_cb callback) {
-  return std::thread(processing_thread, cameras, tname, cs, priority, callback);
+                                 CameraState *cs, process_thread_cb callback) {
+  return std::thread(processing_thread, cameras, tname, cs, callback);
 }
 
 void common_camera_process_front(SubMaster *sm, PubMaster *pm, CameraState *c, int cnt) {

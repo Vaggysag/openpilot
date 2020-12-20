@@ -211,8 +211,6 @@ def wrong_car_mode_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: boo
 EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, bool], Alert]]]] = {
   # ********** events with no alerts **********
 
-  EventName.commIssueWarning: {},
-
   # ********** events only containing alerts displayed in all states **********
 
   EventName.debugAlert: {
@@ -519,7 +517,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "TAKE CONTROL",
       "Steering Temporarily Unavailable",
       AlertStatus.userPrompt, AlertSize.none,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, .4, 2., 3.),
+      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, .4, 2., 1.),
     ET.NO_ENTRY: NoEntryAlert("Steering Temporarily Unavailable",
                               duration_hud_alert=0.),
   },

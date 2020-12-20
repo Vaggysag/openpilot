@@ -17,6 +17,10 @@ AddOption('--asan',
           action='store_true',
           help='turn on ASAN')
 
+AddOption('--clazy',
+          action='store_true',
+          help='build with clazy')
+
 real_arch = arch = subprocess.check_output(["uname", "-m"], encoding='utf8').rstrip()
 if platform.system() == "Darwin":
   arch = "Darwin"
@@ -89,10 +93,12 @@ else:
       "#cereal",
       "#selfdrive/common",
       "/usr/local/lib",
+      "/usr/local/opt/openssl/lib",
       "/System/Library/Frameworks/OpenGL.framework/Libraries",
     ]
     cflags += ["-DGL_SILENCE_DEPRECATION"]
     cxxflags += ["-DGL_SILENCE_DEPRECATION"]
+    cpppath += ["/usr/local/opt/openssl/include"]
   else:
     libpath = [
       "#phonelibs/snpe/x86_64-linux-clang",
@@ -193,19 +199,11 @@ if GetOption('test'):
 
 if os.environ.get('SCONS_CACHE'):
   cache_dir = '/tmp/scons_cache'
-
-  if os.getenv('CI'):
-    branch = os.getenv('GIT_BRANCH')
-
-    if QCOM_REPLAY:
-      cache_dir = '/tmp/scons_cache_qcom_replay'
-    elif branch is not None and branch != 'master':
-      cache_dir_branch = '/tmp/scons_cache_' + branch
-      if not os.path.isdir(cache_dir_branch) and os.path.isdir(cache_dir):
-        shutil.copytree(cache_dir, cache_dir_branch)
-      cache_dir = cache_dir_branch
-  elif TICI:
+  if TICI:
     cache_dir = '/data/scons_cache'
+
+  if QCOM_REPLAY:
+    cache_dir = '/tmp/scons_cache_qcom_replay'
 
   CacheDir(cache_dir)
 
@@ -304,4 +302,3 @@ if arch != "Darwin":
 
 if arch == "x86_64":
   SConscript(['tools/lib/index_log/SConscript'])
-
