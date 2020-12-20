@@ -30,7 +30,7 @@ AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distract
 if use_e2e == 1:
   _A_CRUISE_MIN_V  = [-6., -6., -6., -6., -6.]
 else:
-  _A_CRUISE_MIN_V  = [-6., -6., -6., -6., -6.]
+  _A_CRUISE_MIN_V  = [-1.0, -.8, -.67, -.5, -.30]
 _A_CRUISE_MIN_BP = [   0., 5.,  10., 20.,  40.]
 
 # need fast accel at very low speed for stop and go

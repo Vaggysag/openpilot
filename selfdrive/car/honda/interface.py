@@ -21,7 +21,7 @@ ALT_BRAKE_FLAG = 1
 BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 4.2
+  return float(accel) / 6
 
 def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
@@ -201,10 +201,10 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4608, 18070], [0, 2566, 3840]]  # BP is 0x1200 and 3840*(stock kp/mod kp)
       tire_stiffness_factor = 1.
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.17], [0.05]]
-      ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
-      ret.longitudinalTuning.kpV = [1.0, 0.6, 0.5, 0.4]
-      ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.16, 0.14, 0.12]
+      ret.longitudinalTuning.kpBP = [0., 5., 35.]
+      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
+      ret.longitudinalTuning.kiBP = [0., 35.]
+      ret.longitudinalTuning.kiV = [0.18, 0.12]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
