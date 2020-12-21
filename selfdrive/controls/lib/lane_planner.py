@@ -35,8 +35,8 @@ class LanePlanner:
     self.l_prob = 0.
     self.r_prob = 0.
 
-    self.l_std = 0.
-    self.r_std = 0.
+    # self.l_std = 0.
+    # self.r_std = 0.
 
     self.l_lane_change_prob = 0.
     self.r_lane_change_prob = 0.
@@ -47,9 +47,9 @@ class LanePlanner:
   def parse_model(self, md):
     if len(md.leftLane.poly):
       self.l_poly = np.array(md.leftLane.poly)
-      self.l_std = float(md.leftLane.std)
+      # self.l_std = float(md.leftLane.std)
       self.r_poly = np.array(md.rightLane.poly)
-      self.r_std = float(md.rightLane.std)
+      # self.r_std = float(md.rightLane.std)
       self.p_poly = np.array(md.path.poly)
     else:
       self.l_poly = model_polyfit(md.leftLane.points, self._path_pinv)  # left line
@@ -79,19 +79,19 @@ class LanePlanner:
     l_prob *= mod
     r_prob *= mod
 
-    # Reduce reliance on uncertain lanelines
-    l_std_mod = interp(self.l_std, [.15, .3], [1.0, 0.0])
-    r_std_mod = interp(self.r_std, [.15, .3], [1.0, 0.0])
-    l_prob *= l_std_mod
-    r_prob *= r_std_mod
+    # Reduce reliance on uncertain lanelines LOL JK
+    # l_std_mod = interp(self.l_std, [.15, .3], [1.0, 0.0])
+    # r_std_mod = interp(self.r_std, [.15, .3], [1.0, 0.0])
+    # l_prob *= l_std_mod
+    # r_prob *= r_std_mod
 
-    # Find current lanewidth
-    self.lane_width_certainty += 0.05 * (l_prob * r_prob - self.lane_width_certainty)
-    current_lane_width = abs(self.l_poly[3] - self.r_poly[3])
-    self.lane_width_estimate += 0.005 * (current_lane_width - self.lane_width_estimate)
-    speed_lane_width = interp(v_ego, [0., 31.], [2.8, 3.5])
-    self.lane_width = self.lane_width_certainty * self.lane_width_estimate + \
-                      (1 - self.lane_width_certainty) * speed_lane_width
+    # Find current lanewidth LOL JK
+    # self.lane_width_certainty += 0.05 * (l_prob * r_prob - self.lane_width_certainty)
+    # current_lane_width = abs(self.l_poly[3] - self.r_poly[3])
+    # self.lane_width_estimate += 0.005 * (current_lane_width - self.lane_width_estimate)
+    # speed_lane_width = interp(v_ego, [0., 31.], [2.8, 3.5])
+    # self.lane_width = self.lane_width_certainty * self.lane_width_estimate + \
+    #                   (1 - self.lane_width_certainty) * speed_lane_width
 
     clipped_lane_width = min(4.0, self.lane_width)
     path_from_left_lane = self.l_poly.copy()
