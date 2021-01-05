@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 from cereal import car
-from common.numpy_fast import clip, interp
+from common.numpy_fast import clip #, interp
 from common.realtime import DT_CTRL
 from common.params import Params
 from selfdrive.swaglog import cloudlog
@@ -21,7 +21,7 @@ ALT_BRAKE_FLAG = 1
 BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 5.0
+  return float(accel) / 4.8
 
 def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
@@ -95,37 +95,37 @@ class CarInterface(CarInterfaceBase):
   def compute_gb(accel, speed): # pylint: disable=method-hidden
     raise NotImplementedError
 
-  @staticmethod
-  def calc_accel_override(a_ego, a_target, v_ego, v_target):
+  # @staticmethod
+  # def calc_accel_override(a_ego, a_target, v_ego, v_target):
 
     # normalized max accel. Allowing max accel at low speed causes speed overshoots
-    max_accel_bp = [10, 20]    # m/s
-    max_accel_v = [0.714, 1.0]  # unit of max accel
-    max_accel = interp(v_ego, max_accel_bp, max_accel_v)
+    # max_accel_bp = [10, 20]    # m/s
+    # max_accel_v = [0.714, 1.0]  # unit of max accel
+    # max_accel = interp(v_ego, max_accel_bp, max_accel_v)
 
     # limit the pcm accel cmd if:
     # - v_ego exceeds v_target, or
     # - a_ego exceeds a_target and v_ego is close to v_target
 
-    eA = a_ego - a_target
-    valuesA = [1.0, 0.1]
-    bpA = [0.3, 1.1]
+    # eA = a_ego - a_target
+    # valuesA = [1.0, 0.1]
+    # bpA = [0.3, 1.1]
 
-    eV = v_ego - v_target
-    valuesV = [1.0, 0.1]
-    bpV = [0.0, 0.5]
+    # eV = v_ego - v_target
+    # valuesV = [1.0, 0.1]
+    # bpV = [0.0, 0.5]
 
-    valuesRangeV = [1., 0.]
-    bpRangeV = [-1., 0.]
+    # valuesRangeV = [1., 0.]
+    # bpRangeV = [-1., 0.]
 
     # only limit if v_ego is close to v_target
-    speedLimiter = interp(eV, bpV, valuesV)
-    accelLimiter = max(interp(eA, bpA, valuesA), interp(eV, bpRangeV, valuesRangeV))
+    # speedLimiter = interp(eV, bpV, valuesV)
+    # accelLimiter = max(interp(eA, bpA, valuesA), interp(eV, bpRangeV, valuesRangeV))
 
     # accelOverride is more or less the max throttle allowed to pcm: usually set to a constant
     # unless aTargetMax is very high and then we scale with it; this help in quicker restart
 
-    return float(max(max_accel, a_target / A_ACC_MAX)) * min(speedLimiter, accelLimiter)
+    # return float(max(max_accel, a_target / A_ACC_MAX)) * min(speedLimiter, accelLimiter)
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=[]):  # pylint: disable=dangerous-default-value
@@ -200,7 +200,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 12.5  # 10.93 is end-to-end spec
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4608, 18070], [0, 2566, 3840]]  # BP is 0x1200 and 3840*(stock kp/mod kp)
       tire_stiffness_factor = 1.
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.05]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.22], [0.05]]
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
       ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
       ret.longitudinalTuning.kiBP = [0., 35.]
@@ -436,8 +436,8 @@ class CarInterface(CarInterfaceBase):
                                                                          tire_stiffness_factor=tire_stiffness_factor)
 
     if candidate in HONDA_BOSCH:
-      ret.gasMaxBP = [0.]   # m/s
-      ret.gasMaxV = [0.23]
+      ret.gasMaxBP = [0.0, 5., 10., 22., 35.] # m/s
+      ret.gasMaxV = [0.36, 0.24, 0.19, 0.17, 0.16] # max gas allowed
       ret.brakeMaxBP = [0.]  # m/s
       ret.brakeMaxV = [1.]   # max brake allowed
     else:
@@ -446,8 +446,8 @@ class CarInterface(CarInterfaceBase):
       ret.brakeMaxBP = [5., 20.]  # m/s
       ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
-    ret.stoppingControl = True
-    ret.startAccel = 0.5
+    # ret.stoppingControl = True
+    # ret.startAccel = 0.5
 
     ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.5

@@ -85,13 +85,13 @@ class LanePlanner:
     # l_prob *= l_std_mod
     # r_prob *= r_std_mod
 
-    # Find current lanewidth LOL JK
-    # self.lane_width_certainty += 0.05 * (l_prob * r_prob - self.lane_width_certainty)
-    # current_lane_width = abs(self.l_poly[3] - self.r_poly[3])
-    # self.lane_width_estimate += 0.005 * (current_lane_width - self.lane_width_estimate)
-    # speed_lane_width = interp(v_ego, [0., 31.], [2.8, 3.5])
-    # self.lane_width = self.lane_width_certainty * self.lane_width_estimate + \
-    #                   (1 - self.lane_width_certainty) * speed_lane_width
+    # Find current lanewidth
+    self.lane_width_certainty += 0.05 * (l_prob * r_prob - self.lane_width_certainty)
+    current_lane_width = abs(self.l_poly[3] - self.r_poly[3])
+    self.lane_width_estimate += 0.005 * (current_lane_width - self.lane_width_estimate)
+    speed_lane_width = interp(v_ego, [0., 31.], [2.8, 3.5])
+    self.lane_width = self.lane_width_certainty * self.lane_width_estimate + \
+                      (1 - self.lane_width_certainty) * speed_lane_width
 
     clipped_lane_width = min(4.0, self.lane_width)
     path_from_left_lane = self.l_poly.copy()

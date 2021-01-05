@@ -100,6 +100,9 @@ class CarController():
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
+    self.stopped_frame = 0
+    self.last_wheeltick = 0
+    self.last_wheeltick_ct = 0
 
     # tesla radar
     p = Params()
@@ -152,14 +155,25 @@ class CarController():
     # **** process the car messages ****
 
     if CS.CP.carFingerprint in HONDA_BOSCH:
-      stopping = 0
+      stopped = 0
       starting = 0
       accel = actuators.gas - actuators.brake
-      if accel < 0 and CS.out.vEgo < 0.05:
-        # prevent rolling backwards
-        stopping = 0 # force 0?
-        # accel = -1.0 # comment?
-      elif accel > 0 and CS.out.vEgo < 0.05:
+      if accel < 0 and CS.out.vEgo <= 0.1:
+        if CS.avg_wheelTick == self.last_wheeltick:
+          self.last_wheeltick_ct += 1
+          if self.last_wheeltick_ct == 6:
+            self.stopped_frame = frame
+          if self.last_wheeltick_ct >= 6:
+            stopped = 1
+            # go to full brake after 1 second of standstill
+            if (frame - self.stopped_frame) >= 100:
+              accel = -1.0
+        else:
+          self.last_wheeltick = CS.avg_wheelTick
+          self.last_wheeltick_ct = 0
+          self.stopped_frame = 0
+      
+      elif accel > 0 and (0.3 >= CS.out.vEgo >= 0):
         starting = 1
       apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
       apply_gas = interp(accel, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
@@ -201,7 +215,7 @@ class CarController():
         idx = frame // 2
         ts = frame * DT_CTRL
         if CS.CP.carFingerprint in HONDA_BOSCH:
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint))
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopped, starting, CS.CP.carFingerprint))
         else:
           pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
           can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
