@@ -173,11 +173,6 @@ def fingerprint(logcan, sendcan):
 def get_car(logcan, sendcan):
   candidate, fingerprints, vin, car_fw, source = fingerprint(logcan, sendcan)
 
-  candidate = "HONDA CIVIC HATCHBACK 2017 SEDAN/COUPE 2019"
-  vin = "SHHFK7H60KU201289"
-  car_fw = []
-  has_relay = False
-
   if candidate is None:
     cloudlog.warning("car doesn't match any fingerprints: %r", fingerprints)
     candidate = "mock"

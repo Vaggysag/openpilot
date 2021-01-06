@@ -529,11 +529,6 @@ def main():
     ("VisionRadarToggle", "1"),
     ("LaneChangeEnabled", "1"),
     ("IsDriverViewEnabled", "0"),
-    ("TeslaRadarVin", "5YJSA1E11GF150353"),
-    # offset of the radar location on the front of the car. measured in meters. positive is to the right tire. -0.58 is for 2017 Civic Hatchback
-    ("TeslaRadarOffset", "0."),
-    ("TeslaRadarPosition", "1"),
-    ("TeslaRadarEpasType", "3"),
   ]
 
   # set unset params

@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 from cereal import car
 from opendbc.can.parser import CANParser
-# from cereal.services import service_list
-# import cereal.messaging as messaging
 from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.honda.values import DBC
-from common.params import Params
 
 
 def _create_nidec_can_parser(car_fingerprint):
@@ -50,7 +47,6 @@ VALID_MESSAGE_COUNT_THRESHOLD = 4
 
 
 def _create_tesla_can_parser(car_fingerprint):
-  # TODO: Determine which radar we're using automagically
   bus = 2
 
   msg_a_n = len(RADAR_A_MSGS)
@@ -78,15 +74,10 @@ def _create_tesla_can_parser(car_fingerprint):
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
-    params = Params()
-    # TODO: get this from a param elsewhere
     use_tesla = True
-    # radar
     self.pts = {}
     # self.extPts = {}
     self.delay = 0
-    self.TRACK_LEFT_LANE = False
-    self.TRACK_RIGHT_LANE = False
     self.updated_messages = set()
     self.canErrorCounter = 0
     # self.AHB_car_detected = False
@@ -103,7 +94,7 @@ class RadarInterface(RadarInterfaceBase):
         # self.extPts = {}
         self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
         self.rcp = _create_tesla_can_parser(CP.carFingerprint)
-        self.radarOffset = params.get("TeslaRadarOffset")
+        self.radarOffset = 0
         self.trackId = 1
         self.trigger_start_msg = RADAR_A_MSGS[0]
         self.trigger_end_msg = RADAR_B_MSGS[-1]

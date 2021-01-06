@@ -7,7 +7,6 @@ from selfdrive.car import create_gas_command
 from selfdrive.car.honda import hondacan, teslaradarcan
 from selfdrive.car.honda.values import CruiseButtons, CAR, VISUAL_HUD, HONDA_BOSCH
 from opendbc.can.packer import CANPacker
-from common.params import Params
 
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -105,14 +104,13 @@ class CarController():
     self.last_wheeltick_ct = 0
 
     # tesla radar
-    p = Params()
     self.radarVin_idx = 0
     self.useTeslaRadar = 1
     self.radarVin = "5YJSA1E11GF150353"
     self.radarPosition = 1
     self.radarEpasType = 3
     self.radarBus = 2
-    self.radarTriggerMessage = 0x17c
+    self.radarTriggerMessage = 0x94
 
     self.params = CarControllerParams(CP)
 
@@ -172,7 +170,7 @@ class CarController():
           self.last_wheeltick = CS.avg_wheelTick
           self.last_wheeltick_ct = 0
           self.stopped_frame = 0
-      
+
       elif accel > 0 and (0.3 >= CS.out.vEgo >= 0):
         starting = 1
       apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
@@ -230,7 +228,6 @@ class CarController():
     #if using radar, we need to send the VIN
     if (frame % 100 == 0):
       can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVin), self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
-      print("***SENDING TESLA RADAR VIN***")
       self.radarVin_idx += 1
       self.radarVin_idx = self.radarVin_idx  % 3
 

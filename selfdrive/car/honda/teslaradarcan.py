@@ -1,7 +1,5 @@
 import struct
 from ctypes import create_string_buffer
-# from common.numpy_fast import clip
-
 
 def create_radar_VIN_msg(radarId, radarVIN, radarCAN, radarTriggerMessage, useRadar, radarPosition, radarEpasType):
   msg_id = 0x560

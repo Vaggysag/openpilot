@@ -1,5 +1,3 @@
-import struct
-from ctypes import create_string_buffer
 from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import HONDA_BOSCH, CAR
 
