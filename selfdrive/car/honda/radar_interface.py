@@ -20,7 +20,7 @@ BOSCH_MAX_DIST = 250.  # max distance for radar
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
-USE_ALL_OBJECTS = True
+USE_ALL_OBJECTS = False
 if not USE_ALL_OBJECTS:
   # use these for tracks (5 tracks)
   RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
@@ -30,7 +30,7 @@ else:
   RADAR_A_MSGS = list(range(0x310, 0x36F, 3))
   RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 
-OBJECT_MIN_PROBABILITY = 40.
+OBJECT_MIN_PROBABILITY = 50.
 CLASS_MIN_PROBABILITY = 50.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9  # time in ns, radar sends data at 0.06 s
 VALID_MESSAGE_COUNT_THRESHOLD = 4
@@ -84,7 +84,7 @@ class RadarInterface(RadarInterfaceBase):
     self.track_id = 0
     self.radar_fault = False
     self.radar_wrong_config = False
-    self.radar_off_can = CP.radarOffCan
+    self.radar_off_can = False # CP.radarOffCan
     self.radar_ts = CP.radarTimeStep
     if self.radar_off_can:
       self.rcp = None
@@ -94,7 +94,8 @@ class RadarInterface(RadarInterfaceBase):
         # self.extPts = {}
         self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
         self.rcp = _create_tesla_can_parser(CP.carFingerprint)
-        self.radarOffset = 0
+        # offset of the radar measured in meters. positive is to the right tire. -0.58 is for 2017 Civic Hatchback
+        self.radarOffset = 0.
         self.trackId = 1
         self.trigger_start_msg = RADAR_A_MSGS[0]
         self.trigger_end_msg = RADAR_B_MSGS[-1]
