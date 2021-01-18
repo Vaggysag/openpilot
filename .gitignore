@@ -1,4 +1,5 @@
 venv/
+.clang-format
 .DS_Store
 .tags
 .ipynb_checkpoints
@@ -31,6 +32,7 @@ a.out
 *.vcd
 config.json
 clcache
+compile_commands.json
 
 persist
 board/obj/

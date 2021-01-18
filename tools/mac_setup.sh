@@ -15,10 +15,11 @@ brew install capnp \
              libusb \
              libtool \
              llvm \
-	     openssl \
+             openssl \
              pyenv \
              qt5 \
              zeromq
+
 
 if [[ $SHELL == "/bin/zsh" ]]; then
   RC_FILE="$HOME/.zshrc"

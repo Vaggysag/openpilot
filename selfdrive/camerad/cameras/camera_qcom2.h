@@ -31,8 +31,6 @@ typedef struct CameraState {
   int exposure_time_max;
   float ef_filtered;
 
-  mat3 transform;
-
   int device_iommu;
   int cdm_iommu;
 
@@ -85,7 +83,7 @@ typedef struct MultiCameraState {
   PubMaster *pm;
 } MultiCameraState;
 
-void cameras_init(MultiCameraState *s, cl_device_id device_id, cl_context ctx);
+void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_id, cl_context ctx);
 void cameras_open(MultiCameraState *s);
 void cameras_run(MultiCameraState *s);
 void camera_autoexposure(CameraState *s, float grey_frac);
