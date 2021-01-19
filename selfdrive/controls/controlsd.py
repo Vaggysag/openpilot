@@ -52,9 +52,10 @@ class Controls:
 
     self.sm = sm
     if self.sm is None:
+      ignore = ['ubloxRaw', 'frontFrame'] if SIMULATION else None
       self.sm = messaging.SubMaster(['thermal', 'health', 'model', 'liveCalibration', 'ubloxRaw',
                                      'dMonitoringState', 'plan', 'pathPlan', 'liveLocationKalman',
-                                     'frame', 'frontFrame'])
+                                     'frame', 'frontFrame'], ignore_alive=ignore)
 
     self.can_sock = can_sock
     if can_sock is None:
@@ -199,7 +200,7 @@ class Controls:
     if self.can_rcv_error or (not CS.canValid and self.sm.frame > 5 / DT_CTRL):
       self.events.add(EventName.canError)
     if (self.sm['health'].safetyModel != self.CP.safetyModel and self.sm.frame > 2 / DT_CTRL) or \
-       self.mismatch_counter >= 200:
+      self.mismatch_counter >= 200:
       self.events.add(EventName.controlsMismatch)
     if not self.sm.alive['plan'] and self.sm.alive['pathPlan']:
       # only plan not being received: radar not communicating
@@ -393,8 +394,8 @@ class Controls:
     if (lac_log.saturated and not CS.steeringPressed) or \
        (self.saturated_count > STEER_ANGLE_SATURATION_TIMEOUT):
       # Check if we deviated from the path
-      left_deviation = actuators.steer > 0 and path_plan.dPoly[3] > 0.1
-      right_deviation = actuators.steer < 0 and path_plan.dPoly[3] < -0.1
+      left_deviation = actuators.steer > 0 and path_plan.dPathPoints[0] < -0.1
+      right_deviation = actuators.steer < 0 and path_plan.dPathPoints[0] > 0.1
 
       if left_deviation or right_deviation:
         self.events.add(EventName.steerSaturated)
@@ -436,8 +437,8 @@ class Controls:
     if len(meta.desirePrediction) and ldw_allowed:
       l_lane_change_prob = meta.desirePrediction[Desire.laneChangeLeft - 1]
       r_lane_change_prob = meta.desirePrediction[Desire.laneChangeRight - 1]
-      l_lane_close = left_lane_visible and (self.sm['pathPlan'].lPoly[3] < (1.08 - CAMERA_OFFSET))
-      r_lane_close = right_lane_visible and (self.sm['pathPlan'].rPoly[3] > -(1.08 + CAMERA_OFFSET))
+      l_lane_close = left_lane_visible and (self.sm['model'].leftLane.poly[3] < (1.08 - CAMERA_OFFSET))
+      r_lane_close = right_lane_visible and (self.sm['model'].rightLane.poly[3] > -(1.08 + CAMERA_OFFSET))
 
       CC.hudControl.leftLaneDepart = bool(l_lane_change_prob > LANE_DEPARTURE_THRESHOLD and l_lane_close)
       CC.hudControl.rightLaneDepart = bool(r_lane_change_prob > LANE_DEPARTURE_THRESHOLD and r_lane_close)

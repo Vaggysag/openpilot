@@ -17,10 +17,10 @@ from selfdrive.loggerd.config import ROOT
 from selfdrive.swaglog import cloudlog
 from selfdrive.version import branch, commit, dirty, origin, version
 
-MAX_SIZE = 100000 * 10  # Normal size is 40-100k, allow up to 1M
+MAX_SIZE = 100000 * 10  # mal size is 40-100k, allow up to 1M
 if TICI:
   MAX_SIZE = MAX_SIZE * 100  # Allow larger size for tici since files contain coredump
-MAX_TOMBSTONE_FN_LEN = 85
+MAX_TOMBSTONE_FN_LEN = 62  # 85 - 23 ("<dongle id>/crash/")
 
 TOMBSTONE_DIR = "/data/tombstones/"
 APPORT_DIR = "/var/crash/"
@@ -156,6 +156,7 @@ def report_tombstone_apport(fn, client):
       crash_function = stacktrace_s[1]
 
     # Remove arguments that can contain pointers to make sentry one-liner unique
+    crash_function = " ".join(crash_function.split(' ')[2:])
     crash_function = re.sub(r'\(.*?\)', '', crash_function)
 
   contents = stacktrace + "\n\n" + contents
